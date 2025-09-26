@@ -112,3 +112,24 @@ body.controls-collapsed .controls{
 /* fixed small handle on the very right edge */
 #controlsHandle{
   posit
+/* ==== 修复：给主内容预留空间；面板按容器折叠 ==== */
+
+/* 工具面板的实际高度（JS 动态写入），默认 64px */
+:root{ --controls-h: 64px; }
+
+/* 主内容顶部留白：面板高度 + 间距，不再被遮挡 */
+.main{ padding-top: calc(var(--controls-h) + 24px); }
+
+/* 用 #controlsWrap 的折叠态来控制隐藏（而不是 body 类） */
+#controlsWrap.is-collapsed .controls{
+  transform:translateX(calc(100% + 16px));
+  opacity:0; visibility:hidden;
+}
+
+/* 右上角把手的样式保持极简；折叠时显示，展开时隐藏 */
+#controlsHandle{ display:none; }
+#controlsWrap.is-collapsed ~ #controlsHandle{ display:block; }
+
+/* 一点点微调：行内按钮和控件更紧凑，全部在一行不换行 */
+.controls-row{ white-space:nowrap; gap:8px; }
+.controls-row .sm{ padding:6px 8px; font-size:13px; }
