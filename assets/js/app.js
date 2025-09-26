@@ -1,3 +1,5 @@
+// ========== app.js (覆盖版) ==========
+
 import { DataStore, Modules, loadFile } from './core.js';
 
 // 适配器
@@ -31,45 +33,36 @@ function renderMeta(){
     : '未加载';
 }
 
-function selectedPreviewColumns(){
-  const sel = $('#previewCols');
-  if(!sel || sel.selectedOptions.length===0) return null; // null 表示“全部列”
-  return Array.from(sel.selectedOptions).map(o => o.value);
+function selectedRowLimit(){
+  return Math.max(1, Math.min(200, Number($('#previewRows')?.value||10)));
 }
 
-export function renderTablePreview(rows = DataStore.rows, limit=null, cols=null){
+export function renderTablePreview(rows = DataStore.rows, limit=null){
   const el = $('#preview'); if(!el) return;
-  const headersAll = DataStore.headers;
+  if(!rows.length){ el.innerHTML = '<p class="muted">暂无数据预览。</p>'; return; }
 
-  if(!rows.length){
-    el.innerHTML = '<p class="muted">暂无数据预览。</p>';
-    return;
-  }
-  const rowLimit = Math.max(1, Math.min(200, Number(limit||$('#previewRows')?.value||10)));
-  const headers = Array.isArray(cols) && cols.length ? cols : headersAll;
-
+  const headers = DataStore.headers;
+  const rowLimit = selectedRowLimit();
   const top = rows.slice(0, rowLimit);
+
   const thead = '<tr>' + headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('') + '</tr>';
   const tbody = top.map(r => '<tr>' + headers.map(h=>`<td>${escapeHTML(r[h] ?? '')}</td>`).join('') + '</tr>').join('');
-  el.innerHTML = `<div class="h">数据预览（前 ${rowLimit} 行；列：${headers.length}/${headersAll.length}）</div>
+
+  el.innerHTML = `<div class="h">数据预览（前 ${rowLimit} 行）</div>
                   <div class="grid"><div class="card" style="overflow:auto">
                   <table>${thead}${tbody}</table></div></div>`;
 }
 
 function ensureData(){
-  if(!DataStore.rows.length){
-    alert('请先读取数据文件');
-    throw new Error('no data');
-  }
+  if(!DataStore.rows.length){ alert('请先读取数据文件'); throw new Error('no data'); }
 }
 
-/* ===== 路由：左侧子菜单点击 ===== */
+/* ===== 路由绑定 ===== */
 $$('[data-route]').forEach(el=>{
   el.addEventListener('click', ()=>{
     const route = el.getAttribute('data-route');
     if(route === 'home'){
-      const v = $('#view');
-      if(v) v.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p><p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
+      $('#view').innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p><p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
       return;
     }
     const mod = Modules.get(route);
@@ -77,12 +70,10 @@ $$('[data-route]').forEach(el=>{
   });
 });
 
-/* ===== 顶部工具面板：读取/预览/自检 + 预览行数 & 列选择 ===== */
+/* ===== 悬浮工具面板：事件 ===== */
 const btnLoad      = $('#btnLoad');
 const btnPreview   = $('#btnPreview');
-const btnTests     = $('#btnTests');
 const previewRowsI = $('#previewRows');
-const previewColsS = $('#previewCols');
 
 if(btnLoad){
   btnLoad.onclick = async () => {
@@ -92,41 +83,21 @@ if(btnLoad){
     try {
       await loadFile(type, file);
       renderMeta();
-
-      // 填充“预览列（多选）”
-      if(previewColsS){
-        const headers = DataStore.headers;
-        previewColsS.innerHTML = headers.map(h=>`<option value="${escapeHTML(h)}">${escapeHTML(h)}</option>`).join('');
-        // 默认全选效果：不选任何项即表示“全部列”，更符合浏览直觉
-        previewColsS.size = Math.min(6, Math.max(1, headers.length)); // 自适应高度
-      }
-
       renderTablePreview();
     } catch (e){
       alert('解析失败：' + e);
     }
   };
 }
-
 if(btnPreview){
-  btnPreview.onclick = () => {
-    ensureData();
-    renderTablePreview(DataStore.rows, Number(previewRowsI?.value||10), selectedPreviewColumns());
-  };
+  btnPreview.onclick = () => { ensureData(); renderTablePreview(); };
 }
 if(previewRowsI){
-  previewRowsI.addEventListener('change', ()=>{
-    if(!DataStore.rows.length) return;
-    renderTablePreview(DataStore.rows, Number(previewRowsI.value||10), selectedPreviewColumns());
-  });
-}
-if(previewColsS){
-  previewColsS.addEventListener('change', ()=>{
-    if(!DataStore.rows.length) return;
-    renderTablePreview(DataStore.rows, Number(previewRowsI?.value||10), selectedPreviewColumns());
-  });
+  previewRowsI.addEventListener('change', ()=> { if(DataStore.rows.length){ renderTablePreview(); } });
 }
 
+/* ===== 左侧栏底部：运行自检 ===== */
+const btnTests = $('#btnTests');
 if(btnTests){
   btnTests.onclick = () => {
     const NEED_QUOTE = /[",\n]/;
@@ -158,40 +129,28 @@ if(view){
   view.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p><p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
 }
 
-/* ===== 主题切换（按钮现在在侧边栏品牌区） ===== */
+/* ===== 主题切换（按钮在左上角品牌区） ===== */
 const themeBtn = $('#themeToggle');
-
-function getSystemPrefersDark(){
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
+function getSystemPrefersDark(){ return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
 function applyTheme(theme){
-  const root = document.documentElement;
-  root.setAttribute('data-theme', theme);
-  try { localStorage.setItem('theme', theme); } catch {}
+  document.documentElement.setAttribute('data-theme', theme);
+  try{ localStorage.setItem('theme', theme); }catch{}
+  if(themeBtn){ themeBtn.textContent = theme === 'dark' ? '🌞 浅色' : '🌙 深色'; }
 
-  if(themeBtn){
-    themeBtn.textContent = theme === 'dark' ? '🌞 浅色' : '🌙 深色';
-  }
-
-  // Chart.js 全局颜色联动
   if(window.Chart){
     const isDark = theme === 'dark';
     window.Chart.defaults.color = isDark ? '#e5e7eb' : '#111827';
     window.Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,.16)' : '#e5e7eb';
     if(window.__histChart){
       const c = window.__histChart;
-      c.options.scales = c.options.scales || {};
       ['x','y'].forEach(ax=>{
         c.options.scales[ax] = c.options.scales[ax] || {};
-        c.options.scales[ax].ticks = c.options.scales[ax].ticks || {};
-        c.options.scales[ax].grid  = c.options.scales[ax].grid  || {};
-        c.options.scales[ax].ticks.color = window.Chart.defaults.color;
-        c.options.scales[ax].grid.color  = isDark ? 'rgba(255,255,255,.12)' : '#e5e7eb';
+        c.options.scales[ax].ticks = { ...(c.options.scales[ax].ticks||{}), color: window.Chart.defaults.color };
+        c.options.scales[ax].grid  = { ...(c.options.scales[ax].grid||{}),  color: isDark ? 'rgba(255,255,255,.12)' : '#e5e7eb' };
       });
       c.update();
     }
   }
-  // Plotly 热力图联动
   if(window.Plotly){
     const el = document.getElementById('hm-plot');
     if(el && el.data){
@@ -205,14 +164,10 @@ function applyTheme(theme){
       });
     }
   }
-
-  window.__theme = theme;
-  window.dispatchEvent(new CustomEvent('themechange', { detail:{ theme } }));
 }
 (function initTheme(){
   const saved = (()=>{ try{ return localStorage.getItem('theme'); }catch{ return null; } })();
-  const theme = saved || (getSystemPrefersDark() ? 'dark' : 'light');
-  applyTheme(theme);
+  applyTheme(saved || (getSystemPrefersDark() ? 'dark' : 'light'));
   if(themeBtn){
     themeBtn.onclick = ()=> applyTheme(
       document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
@@ -220,7 +175,7 @@ function applyTheme(theme){
   }
 })();
 
-/* ===== 侧边栏：柔和展开 + 点击已展开收起（之前你要的行为） ===== */
+/* ===== 侧边栏：柔和展开 + 点击已展开收起 ===== */
 (function setupSidebarStickyOpen(){
   const items = Array.from(document.querySelectorAll('.nav-item'));
   const heads = Array.from(document.querySelectorAll('.nav-head'));
@@ -228,44 +183,44 @@ function applyTheme(theme){
 
   heads.forEach(head=>{
     const item = head.closest('.nav-item');
-
     head.addEventListener('mouseenter', ()=>{
       if(!item.classList.contains('open')){
         items.forEach(i=> i.classList.remove('open'));
         item.classList.add('open');
       }
     });
-
     head.addEventListener('click', ()=>{
-      if(item.classList.contains('open')){
-        item.classList.remove('open');
-      }else{
-        items.forEach(i=> i.classList.remove('open'));
-        item.classList.add('open');
-      }
+      if(item.classList.contains('open')) item.classList.remove('open');
+      else { items.forEach(i=> i.classList.remove('open')); item.classList.add('open'); }
     });
   });
 })();
 
-/* ===== 工具面板：向右柔和隐藏/展开 + 粘顶滚动玻璃态 ===== */
-(function setupControlsPanel(){
-  const wrap   = $('#controlsWrap');
-  const panel  = $('#controlsPanel');
-  const handle = $('#controlsHandle');
-  if(!wrap || !panel || !handle) return;
+/* ===== 悬浮面板：向右柔和隐藏（只留右上角把手），展开后悬浮于页面上 ===== */
+(function setupControlsFloating(){
+  const row   = $('.controls-row');
+  const toggleInRow = $('#controlsToggle');
 
-  // 折叠/展开
-  handle.addEventListener('click', ()=>{
-    wrap.classList.toggle('is-collapsed');
-    // 切换箭头：⟨ 展开 -> ⟩
-    handle.textContent = wrap.classList.contains('is-collapsed') ? '⟩' : '⟨';
-  });
+  // 右上角独立把手（仅在收起状态显示）
+  let fixedHandle = document.createElement('button');
+  fixedHandle.id = 'controlsHandle';
+  fixedHandle.type = 'button';
+  fixedHandle.textContent = '⟩';
+  document.body.appendChild(fixedHandle);
 
-  // 滚动时切换玻璃态
-  const onScroll = ()=>{
-    const sc = window.scrollY || document.documentElement.scrollTop;
-    wrap.classList.toggle('scrolled', sc > 10);
-  };
-  onScroll();
-  window.addEventListener('scroll', onScroll, { passive:true });
+  function setCollapsed(on){
+    document.body.classList.toggle('controls-collapsed', !!on);
+    // 行内按钮箭头同步
+    if(toggleInRow) toggleInRow.textContent = on ? '⟨' : '⟨';
+    // 固定把手箭头同步
+    fixedHandle.textContent = on ? '⟩' : '⟩';
+  }
+
+  if(toggleInRow){
+    toggleInRow.addEventListener('click', ()=> setCollapsed(!document.body.classList.contains('controls-collapsed')));
+  }
+  fixedHandle.addEventListener('click', ()=> setCollapsed(false));
+
+  // 初始为展开
+  setCollapsed(false);
 })();
