@@ -9,16 +9,24 @@
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand"><span class="dot"></span><h1>Data Lab</h1></div>
+      <div class="brand">
+        <h1>Data Lab</h1>
+        <!-- 主题切换按钮移到品牌右侧 -->
+        <button class="btn secondary theme-toggle tiny" id="themeToggle" aria-label="切换主题">🌙 深色</button>
+      </div>
       <nav class="nav">
         <div class="nav-item">
-          <div class="nav-head" data-route="home"><div class="title"><span class="icon"></span><span>首页</span></div><span class="chev">▸</span></div>
+          <div class="nav-head" data-route="home">
+            <div class="title"><span>首页</span></div><span class="chev">▸</span>
+          </div>
           <div class="submenu">
             <a href="#home" data-route="home">欢迎</a>
           </div>
         </div>
         <div class="nav-item">
-          <div class="nav-head" data-route="clean"><div class="title"><span class="icon"></span><span>数据清洗</span></div><span class="chev">▸</span></div>
+          <div class="nav-head" data-route="clean">
+            <div class="title"><span>数据清洗</span></div><span class="chev">▸</span>
+          </div>
           <div class="submenu">
             <a data-route="clean/remove-empty">删除空行</a>
             <a data-route="clean/dedupe">按列去重</a>
@@ -26,37 +34,55 @@
           </div>
         </div>
         <div class="nav-item">
-          <div class="nav-head" data-route="analyze"><div class="title"><span class="icon"></span><span>数据分析</span></div><span class="chev">▸</span></div>
+          <div class="nav-head" data-route="analyze">
+            <div class="title"><span>数据分析</span></div><span class="chev">▸</span>
+          </div>
           <div class="submenu">
             <a data-route="analyze/line">折线图</a>
             <a data-route="analyze/bar">柱状/直方图</a>
-            <a data-route="analyze/pie">饼图</a>
-            <a data-route="analyze/heatmap">热力图（占位）</a>
-            <a data-route="analyze/wordcloud">词云（占位）</a>
             <a data-route="analyze/hist">直方图（自动分箱）</a>
+            <a data-route="analyze/pie">饼图</a>
+            <a data-route="analyze/heatmap">热力图</a>
+            <a data-route="analyze/wordcloud">词云</a>
           </div>
         </div>
       </nav>
     </aside>
 
     <main class="main">
+      <!-- 工具面板：可折叠、粘顶、玻璃态 -->
+      <div class="controls-wrap" id="controlsWrap">
+        <section class="card controls" id="controlsPanel" aria-label="工具面板">
+          <div class="toolbar">
+            <span class="badge">数据源</span>
+            <select id="adapterSelect">
+              <option value="csv">CSV / 文本</option>
+              <option value="excel">Excel (.xlsx)</option>
+              <option value="sqlite">SQLite (.db)</option>
+              <option value="json">JSON</option>
+            </select>
+            <input id="fileInput" type="file" />
+            <button class="btn" id="btnLoad">读取</button>
+            <button class="btn secondary" id="btnPreview">预览</button>
+            <button class="btn ghost" id="btnTests">运行自检</button>
+            <span class="chip" id="metaChip">未加载</span>
+
+            <!-- 预览选项：行数 + 列多选 -->
+            <label class="inline">
+              预览行数
+              <input id="previewRows" type="number" min="1" max="200" value="10" />
+            </label>
+            <label class="inline">
+              预览列（多选）
+              <select id="previewCols" multiple size="1" title="按 Ctrl/⌘ 多选；不选=全部列"></select>
+            </label>
+          </div>
+        </section>
+        <!-- 折叠把手：右侧常驻，用于隐藏/展开工具面板 -->
+        <button class="controls-handle" id="controlsHandle" aria-label="隐藏/展开工具面板" title="隐藏/展开">⟨</button>
+      </div>
+
       <section class="card">
-        <div class="toolbar">
-          <span class="badge">数据源</span>
-          <select id="adapterSelect">
-            <option value="csv">CSV / 文本</option>
-            <option value="excel">Excel (.xlsx)</option>
-            <option value="sqlite">SQLite (.db)</option>
-            <option value="json">JSON</option>
-          </select>
-          <input id="fileInput" type="file" />
-          <button class="btn secondary theme-toggle" id="themeToggle" aria-label="切换主题">🌙 深色</button>
-          <button class="btn" id="btnLoad">读取</button>
-          <button class="btn secondary" id="btnPreview">预览前 20 行</button>
-          <button class="btn ghost" id="btnTests">运行自检</button>
-          <span class="chip" id="metaChip">未加载</span>
-          <a class="btn ghost" href="./samples/sample.csv" download>下载示例CSV</a>
-        </div>
         <div id="preview" class="grid"></div>
         <div id="tests" class="muted" style="margin-top:8px"></div>
       </section>
@@ -66,12 +92,14 @@
       <section id="view" class="card">
         <h2 class="h">欢迎</h2>
         <p class="muted">从左侧选择模块；把鼠标移到“数据清洗/数据分析”可展开小模块。</p>
+        <p>
+          <a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a>
+        </p>
         <p>扩展方式：新增数据格式 → 在 <span class="kbd">assets/js/adapters/</span> 增加一个文件并 <span class="kbd">registerAdapter()</span>；新增功能模块 → 在 <span class="kbd">assets/js/modules/</span> 添加文件并 <span class="kbd">registerModule()</span>。</p>
       </section>
     </main>
   </div>
 
-  <!-- 轻依赖：图表库按需加载；解析库在适配器中懒加载 -->
   <script type="module" src="./assets/js/app.js"></script>
 </body>
 </html>
