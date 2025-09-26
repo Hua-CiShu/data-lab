@@ -1,17 +1,14 @@
-// ========== app.js (可覆盖版) ==========
+import { DataStore, Modules, loadFile } from './core.js';
 
-import { DataStore, Adapters, Modules, loadFile } from './core.js';
-
-// 按需引入你已经有的模块
+// 适配器
 import './adapters/csv.js';
 import './adapters/excel.js';
 import './adapters/sqlite.js';
 import './adapters/json.js';
 
+// 模块
 import './modules/clean.js';
 import './modules/analyze.js';
-
-// 如果你已添加下面这些模块，请保留；未添加可以删掉对应行
 import './modules/histogram.js';
 import './modules/heatmap.js';   // Plotly 版
 import './modules/wordcloud.js';
@@ -19,10 +16,10 @@ import './modules/wordcloud.js';
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* ========== 基础工具 ========== */
+/* ===== 工具函数 ===== */
 export function escapeHTML(s){
   return String(s).replace(/[&<>"']/g, m => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[m]));
 }
 
@@ -34,19 +31,27 @@ function renderMeta(){
     : '未加载';
 }
 
-export function renderTablePreview(rows = DataStore.rows, limit=20){
-  const el = $('#preview');
-  if(!el) return;
+function selectedPreviewColumns(){
+  const sel = $('#previewCols');
+  if(!sel || sel.selectedOptions.length===0) return null; // null 表示“全部列”
+  return Array.from(sel.selectedOptions).map(o => o.value);
+}
+
+export function renderTablePreview(rows = DataStore.rows, limit=null, cols=null){
+  const el = $('#preview'); if(!el) return;
+  const headersAll = DataStore.headers;
 
   if(!rows.length){
     el.innerHTML = '<p class="muted">暂无数据预览。</p>';
     return;
   }
-  const headers = DataStore.headers;
-  const top = rows.slice(0, limit);
+  const rowLimit = Math.max(1, Math.min(200, Number(limit||$('#previewRows')?.value||10)));
+  const headers = Array.isArray(cols) && cols.length ? cols : headersAll;
+
+  const top = rows.slice(0, rowLimit);
   const thead = '<tr>' + headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('') + '</tr>';
   const tbody = top.map(r => '<tr>' + headers.map(h=>`<td>${escapeHTML(r[h] ?? '')}</td>`).join('') + '</tr>').join('');
-  el.innerHTML = `<div class="h">数据预览（前 ${limit} 行）</div>
+  el.innerHTML = `<div class="h">数据预览（前 ${rowLimit} 行；列：${headers.length}/${headersAll.length}）</div>
                   <div class="grid"><div class="card" style="overflow:auto">
                   <table>${thead}${tbody}</table></div></div>`;
 }
@@ -58,13 +63,13 @@ function ensureData(){
   }
 }
 
-/* ========== 路由绑定（点击左侧子菜单触发模块） ========== */
+/* ===== 路由：左侧子菜单点击 ===== */
 $$('[data-route]').forEach(el=>{
   el.addEventListener('click', ()=>{
     const route = el.getAttribute('data-route');
     if(route === 'home'){
       const v = $('#view');
-      if(v) v.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p>';
+      if(v) v.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p><p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
       return;
     }
     const mod = Modules.get(route);
@@ -72,10 +77,12 @@ $$('[data-route]').forEach(el=>{
   });
 });
 
-/* ========== 顶部按钮：读取/预览/自检 ========== */
-const btnLoad    = $('#btnLoad');
-const btnPreview = $('#btnPreview');
-const btnTests   = $('#btnTests');
+/* ===== 顶部工具面板：读取/预览/自检 + 预览行数 & 列选择 ===== */
+const btnLoad      = $('#btnLoad');
+const btnPreview   = $('#btnPreview');
+const btnTests     = $('#btnTests');
+const previewRowsI = $('#previewRows');
+const previewColsS = $('#previewCols');
 
 if(btnLoad){
   btnLoad.onclick = async () => {
@@ -85,6 +92,15 @@ if(btnLoad){
     try {
       await loadFile(type, file);
       renderMeta();
+
+      // 填充“预览列（多选）”
+      if(previewColsS){
+        const headers = DataStore.headers;
+        previewColsS.innerHTML = headers.map(h=>`<option value="${escapeHTML(h)}">${escapeHTML(h)}</option>`).join('');
+        // 默认全选效果：不选任何项即表示“全部列”，更符合浏览直觉
+        previewColsS.size = Math.min(6, Math.max(1, headers.length)); // 自适应高度
+      }
+
       renderTablePreview();
     } catch (e){
       alert('解析失败：' + e);
@@ -93,12 +109,26 @@ if(btnLoad){
 }
 
 if(btnPreview){
-  btnPreview.onclick = () => renderTablePreview();
+  btnPreview.onclick = () => {
+    ensureData();
+    renderTablePreview(DataStore.rows, Number(previewRowsI?.value||10), selectedPreviewColumns());
+  };
+}
+if(previewRowsI){
+  previewRowsI.addEventListener('change', ()=>{
+    if(!DataStore.rows.length) return;
+    renderTablePreview(DataStore.rows, Number(previewRowsI.value||10), selectedPreviewColumns());
+  });
+}
+if(previewColsS){
+  previewColsS.addEventListener('change', ()=>{
+    if(!DataStore.rows.length) return;
+    renderTablePreview(DataStore.rows, Number(previewRowsI?.value||10), selectedPreviewColumns());
+  });
 }
 
 if(btnTests){
   btnTests.onclick = () => {
-    // 轻量自检：导出规则/转义
     const NEED_QUOTE = /[",\n]/;
     const csvCell = v => {
       if(v==null) return '';
@@ -122,13 +152,13 @@ if(btnTests){
   };
 }
 
-/* ========== 初始视图 ========== */
+/* ===== 初始欢迎区 ===== */
 const view = $('#view');
 if(view){
-  view.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p>';
+  view.innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p><p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
 }
 
-/* ========== 主题：深/浅切换（含图表联动） ========== */
+/* ===== 主题切换（按钮现在在侧边栏品牌区） ===== */
 const themeBtn = $('#themeToggle');
 
 function getSystemPrefersDark(){
@@ -143,7 +173,7 @@ function applyTheme(theme){
     themeBtn.textContent = theme === 'dark' ? '🌞 浅色' : '🌙 深色';
   }
 
-  // Chart.js 全局颜色
+  // Chart.js 全局颜色联动
   if(window.Chart){
     const isDark = theme === 'dark';
     window.Chart.defaults.color = isDark ? '#e5e7eb' : '#111827';
@@ -161,7 +191,7 @@ function applyTheme(theme){
       c.update();
     }
   }
-  // Plotly 热力图（如当前页存在）
+  // Plotly 热力图联动
   if(window.Plotly){
     const el = document.getElementById('hm-plot');
     if(el && el.data){
@@ -190,19 +220,15 @@ function applyTheme(theme){
   }
 })();
 
-/* ========== 侧边栏：柔和展开 + 保持展开（直到指向别的大模块） ========== */
-/* ========== 侧边栏：柔和展开 + 保持展开；点击已展开则收起 ========== */
+/* ===== 侧边栏：柔和展开 + 点击已展开收起（之前你要的行为） ===== */
 (function setupSidebarStickyOpen(){
   const items = Array.from(document.querySelectorAll('.nav-item'));
   const heads = Array.from(document.querySelectorAll('.nav-head'));
-
-  // 可选：默认展开第一个
   if(items[0]) items[0].classList.add('open');
 
   heads.forEach(head=>{
     const item = head.closest('.nav-item');
 
-    // 悬停：如果不是当前展开项，则切换到它（保持“指到哪个展开哪个”的体验）
     head.addEventListener('mouseenter', ()=>{
       if(!item.classList.contains('open')){
         items.forEach(i=> i.classList.remove('open'));
@@ -210,7 +236,6 @@ function applyTheme(theme){
       }
     });
 
-    // 点击：如果已展开则收起；否则独占展开（你要的“点击已展开的大模块→缩回去”）
     head.addEventListener('click', ()=>{
       if(item.classList.contains('open')){
         item.classList.remove('open');
@@ -220,7 +245,27 @@ function applyTheme(theme){
       }
     });
   });
-
-  // 不在 mouseleave 时自动关闭；除非切到另一个大模块或手动点击
 })();
 
+/* ===== 工具面板：向右柔和隐藏/展开 + 粘顶滚动玻璃态 ===== */
+(function setupControlsPanel(){
+  const wrap   = $('#controlsWrap');
+  const panel  = $('#controlsPanel');
+  const handle = $('#controlsHandle');
+  if(!wrap || !panel || !handle) return;
+
+  // 折叠/展开
+  handle.addEventListener('click', ()=>{
+    wrap.classList.toggle('is-collapsed');
+    // 切换箭头：⟨ 展开 -> ⟩
+    handle.textContent = wrap.classList.contains('is-collapsed') ? '⟩' : '⟨';
+  });
+
+  // 滚动时切换玻璃态
+  const onScroll = ()=>{
+    const sc = window.scrollY || document.documentElement.scrollTop;
+    wrap.classList.toggle('scrolled', sc > 10);
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive:true });
+})();
