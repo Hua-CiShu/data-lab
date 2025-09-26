@@ -197,30 +197,59 @@ function applyTheme(theme){
 })();
 
 /* ===== 悬浮面板：向右柔和隐藏（只留右上角把手），展开后悬浮于页面上 ===== */
+/* ===== 悬浮面板：测量高度 + 向右柔和隐藏（只留右上角把手） ===== */
 (function setupControlsFloating(){
-  const row   = $('.controls-row');
-  const toggleInRow = $('#controlsToggle');
+  const wrap   = document.getElementById('controlsWrap');
+  const panel  = document.getElementById('controlsPanel');
+  const row    = document.querySelector('.controls-row');
+  const btnInline = document.getElementById('controlsToggle');
 
-  // 右上角独立把手（仅在收起状态显示）
-  let fixedHandle = document.createElement('button');
-  fixedHandle.id = 'controlsHandle';
-  fixedHandle.type = 'button';
-  fixedHandle.textContent = '⟩';
-  document.body.appendChild(fixedHandle);
-
-  function setCollapsed(on){
-    document.body.classList.toggle('controls-collapsed', !!on);
-    // 行内按钮箭头同步
-    if(toggleInRow) toggleInRow.textContent = on ? '⟨' : '⟨';
-    // 固定把手箭头同步
-    fixedHandle.textContent = on ? '⟩' : '⟩';
+  // 右上角固定把手（折叠时出现）
+  let fixedHandle = document.getElementById('controlsHandle');
+  if(!fixedHandle){
+    fixedHandle = document.createElement('button');
+    fixedHandle.id = 'controlsHandle';
+    fixedHandle.type = 'button';
+    fixedHandle.textContent = '⟩';
+    document.body.appendChild(fixedHandle);
   }
 
-  if(toggleInRow){
-    toggleInRow.addEventListener('click', ()=> setCollapsed(!document.body.classList.contains('controls-collapsed')));
+  // 动态写入面板高度 -> 让 .main 顶部自动留白
+  function measure(){
+    const h = (panel?.getBoundingClientRect()?.height || 64);
+    document.documentElement.style.setProperty('--controls-h', Math.round(h) + 'px');
+  }
+
+  // 折叠/展开
+  function setCollapsed(on){
+    if(!wrap) return;
+    wrap.classList.toggle('is-collapsed', !!on);
+    // 行内小按钮箭头
+    if(btnInline) btnInline.textContent = on ? '⟩' : '⟨';
+    // 右上角把手箭头
+    fixedHandle.textContent = on ? '⟨' : '⟩';
+    // 折叠后高度为 0，展开后按实际高度
+    if(on){
+      document.documentElement.style.setProperty('--controls-h', '0px');
+    }else{
+      measure();
+    }
+  }
+
+  // 事件绑定
+  if(btnInline){
+    btnInline.addEventListener('click', ()=>{
+      const on = !wrap.classList.contains('is-collapsed');
+      setCollapsed(on);
+    });
   }
   fixedHandle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始为展开
+  // 初始：展开并测量
   setCollapsed(false);
+  // 窗口变化时重测
+  window.addEventListener('resize', ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); }, {passive:true});
+  // 首次渲染后再测一次，避免字体加载造成高度变化
+  setTimeout(()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); }, 0);
 })();
+
