@@ -1,35 +1,25 @@
-/* Notion-like minimal design with light/dark theme vars */
+/* ---- 全局圆角、字体栈（Notion 风） ---- */
 :root{
+  --radius:6px;
   /* light */
-  --bg:#ffffff;
-  --surface:#ffffff;
-  --fg:#111827;
-  --muted:#6b7280;
-  --primary:#2563eb;
-  --border:#e5e7eb;
-
-  --table-header:#f8fafc;
+  --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
+  --primary:#2563eb; --border:#e5e7eb; --table-header:#f8fafc;
 }
-
-/* dark theme overrides */
+/* dark */
 :root[data-theme="dark"]{
-  --bg:#0f172a;           /* slate-900 */
-  --surface:#0b1222;      /* slightly raised */
-  --fg:#e5e7eb;
-  --muted:#a3aab7;
-  --primary:#60a5fa;      /* softer blue on dark */
-  --border:rgba(255,255,255,.16);
-
-  --table-header:rgba(255,255,255,.06);
+  --bg:#0f172a; --surface:#0b1222; --fg:#e5e7eb; --muted:#a3aab7;
+  --primary:#60a5fa; --border:rgba(255,255,255,.16); --table-header:rgba(255,255,255,.06);
 }
 
 *{box-sizing:border-box}
 body{
   margin:0; background:var(--bg); color:var(--fg);
-  font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  /* Notion-like 字体栈（系统优先 + Inter 可选） */
+  font:15px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        Roboto, Helvetica, Arial, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 }
 
-/* Layout */
+/* ---- 布局 ---- */
 .app{display:grid; grid-template-columns:260px 1fr; min-height:100vh}
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
@@ -41,51 +31,68 @@ body{
 .brand h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.2px}
 
 .nav{display:flex; flex-direction:column; gap:8px}
-.nav-item{border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow:hidden}
-.nav-head{padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between}
+.nav-item{
+  border:1px solid var(--border); border-radius:var(--radius);
+  background:var(--surface); overflow:hidden;
+}
+.nav-head{
+  padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+}
 .nav-head .title{display:flex; align-items:center; gap:8px}
 .nav-head .icon{display:none}
+/* hover 的轻微背景提示 */
 .nav-item:hover .nav-head{background:var(--table-header)}
-.submenu{display:none; border-top:1px solid var(--border); padding:6px 8px 10px 18px}
-.nav-item:hover .submenu{display:block}
-.submenu a{display:block; padding:6px 8px; border-radius:8px; color:inherit; text-decoration:none}
+
+/* ---- 子菜单：动画展开（保持状态由 .open 控制） ---- */
+.submenu{
+  border-top:1px solid var(--border);
+  padding:0 8px 0 18px;
+  /* 动画关键：用 max-height + opacity + translateY */
+  max-height:0;
+  opacity:0;
+  transform:translateY(-2px);
+  overflow:hidden;
+  transition:max-height .2s ease, opacity .2s ease, transform .2s ease, padding .2s ease;
+}
+/* 只有在 .open 时展开；不再用 :hover 控制，从而“保持不消失” */
+.nav-item.open .submenu{
+  padding:6px 8px 10px 18px;
+  max-height:400px;       /* 够用的上限 */
+  opacity:1;
+  transform:translateY(0);
+}
+
+.submenu a{
+  display:block; padding:6px 8px; border-radius:6px; color:inherit; text-decoration:none;
+}
 .submenu a:hover{background:var(--table-header)}
 
 .main{padding:18px}
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:16px;
-}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
 .h{margin:0 0 8px; font-size:18px; font-weight:600}
 .muted{color:var(--muted)}
 
-/* Toolbar */
+/* ---- 工具条 & 按钮（去阴影） ---- */
 .toolbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px}
-.badge{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)}
-.chip{border:1px solid var(--border); border-radius:999px; padding:2px 8px; color:var(--muted); background:var(--surface)}
+.badge,.chip{
+  border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)
+}
+.chip{padding:2px 8px}
 
 .btn{
-  appearance:none; border:1px solid var(--border); background:var(--primary);
-  color:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
+  appearance:none; border:1px solid var(--border);
+  background:var(--primary); color:#fff; padding:8px 12px; border-radius:var(--radius);
+  cursor:pointer; font-weight:600; /* 去掉按钮阴影 */ box-shadow:none;
 }
 .btn.secondary{background:var(--surface); color:var(--fg)}
 .btn.ghost{background:transparent; color:var(--primary); border-color:transparent}
 .btn:hover{filter:brightness(0.98)}
 
-.theme-toggle{
-  margin-left:auto;
-  background:var(--surface);
-  color:var(--fg);
-  border:1px solid var(--border);
-}
-
-/* Inputs / Table */
 input[type=file], select, input, textarea{
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  padding:8px 10px; border-radius:8px;
+  padding:8px 10px; border-radius:var(--radius);
 }
+
 table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
 th,td{border:1px solid var(--border); padding:6px 8px; text-align:left}
 th{background:var(--table-header)}
@@ -93,11 +100,14 @@ th{background:var(--table-header)}
 .grid{display:grid; gap:12px}
 .sep{height:1px; background:var(--border); margin:12px 0}
 
-.kbd{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--fg);
-     background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)}
+.kbd{
+  font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color:var(--fg); background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)
+}
 .pass{color:#16a34a}.fail{color:#dc2626}
 
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
   .sidebar{position:static; height:auto}
 }
+
