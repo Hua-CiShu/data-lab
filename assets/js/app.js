@@ -5,6 +5,9 @@ import './adapters/sqlite.js';
 import './adapters/json.js';
 import './modules/clean.js';
 import './modules/analyze.js';
+import './modules/histogram.js';
+import './modules/heatmap.js';
+import './modules/wordcloud.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
