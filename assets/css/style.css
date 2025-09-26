@@ -1,74 +1,72 @@
-/* Notion-like minimal + light/dark + glass controls */
+/* Notion-like minimal + light/dark + floating glass controls */
 :root{
+  --sidebar:260px;
   --radius:6px;
   /* light */
   --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
   --primary:#2563eb; --border:#e5e7eb; --table-header:#f8fafc;
-  --glass: rgba(255,255,255,.72);
+  --glass: rgba(255,255,255,.78);
 }
 :root[data-theme="dark"]{
   --bg:#0f172a; --surface:#0b1222; --fg:#e5e7eb; --muted:#a3aab7;
   --primary:#60a5fa; --border:rgba(255,255,255,.16); --table-header:rgba(255,255,255,.06);
-  --glass: rgba(11,18,34,.55);
+  --glass: rgba(11,18,34,.62);
 }
 
 *{box-sizing:border-box}
 body{
   margin:0; background:var(--bg); color:var(--fg);
   font:15px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-       Roboto, Helvetica, Arial, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+       Roboto, Helvetica, Arial, "PingFang SC","Noto Sans SC","Microsoft YaHei", sans-serif;
 }
 
 /* Layout */
-.app{display:grid; grid-template-columns:260px 1fr; min-height:100vh}
+.app{display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh}
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
   border-right:1px solid var(--border);
   background:color-mix(in oklab, var(--bg) 92%, var(--fg));
+  display:flex; flex-direction:column;
 }
 .brand{display:flex; align-items:center; gap:8px; margin-bottom:12px}
 .brand h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.2px}
 .theme-toggle.tiny{padding:6px 10px; font-size:12px}
 
-.nav{display:flex; flex-direction:column; gap:8px}
+.nav{display:flex; flex-direction:column; gap:8px; flex:1}
 .nav-item{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); overflow:hidden}
 .nav-head{padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between}
 .nav-head .title{display:flex; align-items:center; gap:8px}
 .nav-item:hover .nav-head{background:var(--table-header)}
-
-/* submenu with soft animation and open/close via .open */
 .submenu{
-  border-top:1px solid var(--border);
-  padding:0 8px 0 18px;
+  border-top:1px solid var(--border); padding:0 8px 0 18px;
   max-height:0; opacity:0; transform:translateY(-2px);
   overflow:hidden;
   transition:max-height .2s ease, opacity .2s ease, transform .2s ease, padding .2s ease;
 }
-.nav-item.open .submenu{
-  padding:6px 8px 10px 18px;
-  max-height:420px; opacity:1; transform:translateY(0);
-}
+.nav-item.open .submenu{padding:6px 8px 10px 18px; max-height:420px; opacity:1; transform:translateY(0)}
 .submenu a{display:block; padding:6px 8px; border-radius:6px; color:inherit; text-decoration:none}
 .submenu a:hover{background:var(--table-header)}
+
+.nav-footer{margin-top:12px}
+.nav-footer .btn.small{padding:6px 10px; font-size:12px}
 
 .main{padding:18px}
 .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
 .h{margin:0 0 8px; font-size:18px; font-weight:600}
 .muted{color:var(--muted)}
 
-/* Toolbar & inputs */
-.toolbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+/* Inputs / Buttons */
 .inline{display:flex; align-items:center; gap:6px}
-.badge,.chip{
-  border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)
-}
+.badge,.chip{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)}
 .chip{padding:2px 8px}
 .btn{appearance:none; border:1px solid var(--border); background:var(--primary); color:#fff; padding:8px 12px; border-radius:var(--radius); cursor:pointer; font-weight:600; box-shadow:none}
 .btn.secondary{background:var(--surface); color:var(--fg)}
 .btn.ghost{background:transparent; color:var(--primary); border-color:transparent}
 .btn:hover{filter:brightness(0.98)}
+.btn.sm{padding:6px 10px; font-size:13px}
 input[type=file], select, input, textarea{border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 10px; border-radius:var(--radius)}
-select[multiple]{min-width:180px}
+select.sm, input.sm{padding:6px 8px; font-size:13px}
+.w-72{width:72px}
 
 /* Table */
 table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
@@ -76,41 +74,41 @@ th,td{border:1px solid var(--border); padding:6px 8px; text-align:left}
 th{background:var(--table-header)}
 .grid{display:grid; gap:12px}
 .sep{height:1px; background:var(--border); margin:12px 0}
-.kbd{font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:var(--fg); background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)}
+.kbd{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--fg); background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)}
 .pass{color:#16a34a}.fail{color:#dc2626}
 
-/* Controls panel: sticky & glass when scrolled; slide-to-right collapse with a handle */
-.controls-wrap{position:sticky; top:12px; z-index:30}
-.controls{
-  transition: transform .22s ease, background-color .22s ease, border-color .22s ease, opacity .22s ease;
+/* ===== Floating controls (always-on glass bar) ===== */
+.controls-wrap{
+  position:fixed; top:12px; left:calc(var(--sidebar) + 24px); right:24px; z-index:50;
+  pointer-events:none; /* 只让内部面板可交互 */
 }
-.controls-wrap.scrolled .controls{
+.controls{
+  pointer-events:auto;
   background:var(--glass);
   backdrop-filter: saturate(120%) blur(10px);
   -webkit-backdrop-filter: saturate(120%) blur(10px);
-  opacity:.98;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 10px 24px rgba(0,0,0,.06);
+  transition: transform .24s ease, opacity .24s ease, visibility .24s ease;
+  overflow:hidden;
 }
-/* collapse container: slide panel to right, keep a small handle visible */
-.controls-wrap{position:relative}
-.controls-handle{
-  position:absolute; top:50%; transform:translateY(-50%);
-  right:-12px; width:24px; height:48px; border-radius:0 var(--radius) var(--radius) 0;
-  border:1px solid var(--border); background:var(--surface); color:var(--fg); cursor:pointer;
-  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+.controls-row{
+  display:flex; align-items:center; gap:10px; padding:8px 10px;
+  white-space:nowrap;
 }
-.controls-handle:hover{filter:brightness(0.98)}
-.controls-wrap.is-collapsed .controls{
-  transform:translateX(calc(100% - 28px)); /* 留出把手宽度约 24~28px */
+.control-toggle.tiny{
+  margin-left:auto; border:1px solid var(--border);
+  background:var(--surface); color:var(--fg);
+  padding:4px 8px; border-radius:var(--radius);
+  font-size:12px; line-height:1; cursor:pointer;
 }
-.controls-wrap.is-collapsed .controls-handle{right:-12px}
-.controls-wrap.is-collapsed .controls-handle::after{content:''}
-/* handle arrow flip */
-.controls-wrap:not(.is-collapsed) #controlsHandle{content:''}
-.controls-wrap.is-collapsed #controlsHandle{}
 
-/* Responsive */
-@media (max-width:900px){
-  .app{grid-template-columns:1fr}
-  .sidebar{position:static; height:auto}
-  .controls-handle{right:-10px}
+/* Collapse to the right: completely hide content, keep only a subtle handle at screen right */
+body.controls-collapsed .controls{
+  transform:translateX(calc(100% + 16px));
+  opacity:0; visibility:hidden;
 }
+/* fixed small handle on the very right edge */
+#controlsHandle{
+  posit
