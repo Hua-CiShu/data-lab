@@ -54,6 +54,17 @@ $('#btnTests').onclick = () => {
   const NEED_QUOTE = /[",\n]/;
   const csvCell = v => { if(v==null) return ''; const s=String(v).replace(/"/g,'""'); return NEED_QUOTE.test(s) ? `"${s}"` : s; };
   const cases = [
+    ['FD 分箱（常规）', (()=>{
+      const fd = window.__histFD;
+      if(!fd) return true;             // 模块未加载时跳过
+      const v = Array.from({length:100}, (_,i)=>i);
+      return fd(v) > 1 && fd(v) <= 60;
+    })()],
+    ['FD 分箱（全相等回退）', (()=>{
+      const fd = window.__histFD; if(!fd) return true;
+      const v = Array(50).fill(1);
+      return fd(v) === 1;
+    })()],
     ['csvCell 普通', csvCell('a')==='a'],
     ['csvCell 逗号', csvCell('a,b')==='"a,b"'],
     ['csvCell 引号', csvCell('a"b')==='"a""b"'],
