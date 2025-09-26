@@ -191,22 +191,36 @@ function applyTheme(theme){
 })();
 
 /* ========== 侧边栏：柔和展开 + 保持展开（直到指向别的大模块） ========== */
+/* ========== 侧边栏：柔和展开 + 保持展开；点击已展开则收起 ========== */
 (function setupSidebarStickyOpen(){
   const items = Array.from(document.querySelectorAll('.nav-item'));
   const heads = Array.from(document.querySelectorAll('.nav-head'));
 
-  // 可选：默认展开第一个大模块
+  // 可选：默认展开第一个
   if(items[0]) items[0].classList.add('open');
 
   heads.forEach(head=>{
+    const item = head.closest('.nav-item');
+
+    // 悬停：如果不是当前展开项，则切换到它（保持“指到哪个展开哪个”的体验）
     head.addEventListener('mouseenter', ()=>{
-      const item = head.closest('.nav-item');
-      // 切换“当前打开”的大模块：先全部关，再开当前
-      items.forEach(i=> i.classList.remove('open'));
-      if(item) item.classList.add('open');
+      if(!item.classList.contains('open')){
+        items.forEach(i=> i.classList.remove('open'));
+        item.classList.add('open');
+      }
+    });
+
+    // 点击：如果已展开则收起；否则独占展开（你要的“点击已展开的大模块→缩回去”）
+    head.addEventListener('click', ()=>{
+      if(item.classList.contains('open')){
+        item.classList.remove('open');
+      }else{
+        items.forEach(i=> i.classList.remove('open'));
+        item.classList.add('open');
+      }
     });
   });
 
-  // 注意：不监听 mouseleave，也不在离开侧栏时关闭；
-  // 只有当鼠标移到“另一个大模块”时才切换 open。
+  // 不在 mouseleave 时自动关闭；除非切到另一个大模块或手动点击
 })();
+
