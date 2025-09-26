@@ -1,74 +1,100 @@
+/* Notion-like minimal design with light/dark theme vars */
 :root{
-  --bg:#ffffff;         /* 背景白 */
-  --fg:#111827;         /* 文字近黑 */
-  --muted:#6b7280;      /* 次要文字 */
-  --primary:#2563eb;    /* 点缀蓝 */
-  --border:#e5e7eb;     /* 细边框 */
-  --card:#ffffff;       /* 卡片白 */
+  /* light */
+  --bg:#ffffff;
+  --surface:#ffffff;
+  --fg:#111827;
+  --muted:#6b7280;
+  --primary:#2563eb;
+  --border:#e5e7eb;
+
+  --table-header:#f8fafc;
+}
+
+/* dark theme overrides */
+:root[data-theme="dark"]{
+  --bg:#0f172a;           /* slate-900 */
+  --surface:#0b1222;      /* slightly raised */
+  --fg:#e5e7eb;
+  --muted:#a3aab7;
+  --primary:#60a5fa;      /* softer blue on dark */
+  --border:rgba(255,255,255,.16);
+
+  --table-header:rgba(255,255,255,.06);
 }
 
 *{box-sizing:border-box}
 body{
-  margin:0; color:var(--fg); background:var(--bg);
-  font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  margin:0; background:var(--bg); color:var(--fg);
+  font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
 }
 
-/* 布局 */
+/* Layout */
 .app{display:grid; grid-template-columns:260px 1fr; min-height:100vh}
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
-  border-right:1px solid var(--border); background:#fafafa;
+  border-right:1px solid var(--border);
+  background:color-mix(in oklab, var(--bg) 92%, var(--fg));
 }
 .brand{display:flex; align-items:center; gap:8px; margin-bottom:12px}
-.brand .dot{display:none}           /* 去掉霓虹点 */
+.brand .dot{display:none}
 .brand h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.2px}
 
 .nav{display:flex; flex-direction:column; gap:8px}
-.nav-item{border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden}
+.nav-item{border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow:hidden}
 .nav-head{padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between}
 .nav-head .title{display:flex; align-items:center; gap:8px}
 .nav-head .icon{display:none}
-.nav-item:hover .nav-head{background:#f8fafc}
+.nav-item:hover .nav-head{background:var(--table-header)}
 .submenu{display:none; border-top:1px solid var(--border); padding:6px 8px 10px 18px}
 .nav-item:hover .submenu{display:block}
-.submenu a{
-  display:block; padding:6px 8px; border-radius:8px; color:inherit; text-decoration:none;
-}
-.submenu a:hover{background:#f3f4f6}
+.submenu a{display:block; padding:6px 8px; border-radius:8px; color:inherit; text-decoration:none}
+.submenu a:hover{background:var(--table-header)}
 
 .main{padding:18px}
 .card{
-  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
   padding:16px;
 }
 .h{margin:0 0 8px; font-size:18px; font-weight:600}
 .muted{color:var(--muted)}
 
+/* Toolbar */
 .toolbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px}
-.badge{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:#fff}
-.chip{border:1px solid var(--border); border-radius:999px; padding:2px 8px; color:var(--muted); background:#fff}
+.badge{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)}
+.chip{border:1px solid var(--border); border-radius:999px; padding:2px 8px; color:var(--muted); background:var(--surface)}
 
 .btn{
   appearance:none; border:1px solid var(--border); background:var(--primary);
   color:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
 }
-.btn.secondary{background:#fff; color:var(--fg)}
+.btn.secondary{background:var(--surface); color:var(--fg)}
 .btn.ghost{background:transparent; color:var(--primary); border-color:transparent}
 .btn:hover{filter:brightness(0.98)}
 
-input[type=file], select, input, textarea{
-  border:1px solid var(--border); background:#fff; color:var(--fg);
-  padding:8px 10px; border-radius:8px;
+.theme-toggle{
+  margin-left:auto;
+  background:var(--surface);
+  color:var(--fg);
+  border:1px solid var(--border);
 }
 
-table{width:100%; border-collapse:collapse; font-size:13px; background:#fff}
+/* Inputs / Table */
+input[type=file], select, input, textarea{
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+  padding:8px 10px; border-radius:8px;
+}
+table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
 th,td{border:1px solid var(--border); padding:6px 8px; text-align:left}
-th{background:#f8fafc}
+th{background:var(--table-header)}
 
 .grid{display:grid; gap:12px}
 .sep{height:1px; background:var(--border); margin:12px 0}
 
-.kbd{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#111827; background:#eef2ff; padding:2px 6px; border-radius:6px; border:1px solid #dbeafe}
+.kbd{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--fg);
+     background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)}
 .pass{color:#16a34a}.fail{color:#dc2626}
 
 @media (max-width:900px){
