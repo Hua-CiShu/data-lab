@@ -9,6 +9,67 @@ import './modules/histogram.js';
 import './modules/heatmap.js';
 import './modules/wordcloud.js';
 
+/* ===== Theme: light/dark with persistence ===== */
+const themeBtn = document.getElementById('themeToggle');
+
+function getSystemPrefersDark(){
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function applyTheme(theme){
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  // 更新按钮文字
+  if(themeBtn){
+    themeBtn.textContent = theme === 'dark' ? '🌞 浅色' : '🌙 深色';
+  }
+  // —— 图表也跟随主题（坐标轴/网格颜色）——
+  if(window.Chart){
+    const isDark = theme === 'dark';
+    window.Chart.defaults.color = isDark ? '#e5e7eb' : '#111827';
+    window.Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,.2)' : '#e5e7eb';
+    // 直方图实例（如果已经渲染过）做一次轻微 restyle
+    if(window.__histChart){
+      const c = window.__histChart;
+      c.options.scales = c.options.scales || {};
+      ['x','y'].forEach(ax=>{
+        c.options.scales[ax] = c.options.scales[ax] || {};
+        c.options.scales[ax].ticks = c.options.scales[ax].ticks || {};
+        c.options.scales[ax].grid  = c.options.scales[ax].grid  || {};
+        c.options.scales[ax].ticks.color = window.Chart.defaults.color;
+        c.options.scales[ax].grid.color  = isDark ? 'rgba(255,255,255,.12)' : '#e5e7eb';
+      });
+      c.update();
+    }
+  }
+  // Plotly 热力图（如果在当前页）
+  if(window.Plotly){
+    const el = document.getElementById('hm-plot');
+    if(el && el.data){
+      window.Plotly.relayout(el, {
+        paper_bgcolor: theme==='dark' ? '#0b1222' : '#ffffff',
+        plot_bgcolor:   theme==='dark' ? '#0b1222' : '#ffffff',
+        'xaxis.tickfont.color': theme==='dark' ? '#e5e7eb' : '#111827',
+        'yaxis.tickfont.color': theme==='dark' ? '#e5e7eb' : '#111827',
+        'xaxis.gridcolor': theme==='dark' ? 'rgba(255,255,255,.12)' : '#e5e7eb',
+        'yaxis.gridcolor': theme==='dark' ? 'rgba(255,255,255,.12)' : '#e5e7eb'
+      });
+    }
+  }
+  // 给其它模块一个 hook
+  window.__theme = theme;
+  window.dispatchEvent(new CustomEvent('themechange', { detail:{ theme } }));
+}
+
+(function initTheme(){
+  const saved = localStorage.getItem('theme');
+  const theme = saved || (getSystemPrefersDark() ? 'dark' : 'light');
+  applyTheme(theme);
+  if(themeBtn){
+    themeBtn.onclick = ()=> applyTheme((document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark');
+  }
+})();
+
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
@@ -78,63 +139,3 @@ $('#btnTests').onclick = () => {
 // 初始视图
 $('#view').innerHTML = '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p>';
 
-/* ===== Theme: light/dark with persistence ===== */
-const themeBtn = document.getElementById('themeToggle');
-
-function getSystemPrefersDark(){
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-function applyTheme(theme){
-  const root = document.documentElement;
-  root.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
-  // 更新按钮文字
-  if(themeBtn){
-    themeBtn.textContent = theme === 'dark' ? '🌞 浅色' : '🌙 深色';
-  }
-  // —— 图表也跟随主题（坐标轴/网格颜色）——
-  if(window.Chart){
-    const isDark = theme === 'dark';
-    window.Chart.defaults.color = isDark ? '#e5e7eb' : '#111827';
-    window.Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,.2)' : '#e5e7eb';
-    // 直方图实例（如果已经渲染过）做一次轻微 restyle
-    if(window.__histChart){
-      const c = window.__histChart;
-      c.options.scales = c.options.scales || {};
-      ['x','y'].forEach(ax=>{
-        c.options.scales[ax] = c.options.scales[ax] || {};
-        c.options.scales[ax].ticks = c.options.scales[ax].ticks || {};
-        c.options.scales[ax].grid  = c.options.scales[ax].grid  || {};
-        c.options.scales[ax].ticks.color = window.Chart.defaults.color;
-        c.options.scales[ax].grid.color  = isDark ? 'rgba(255,255,255,.12)' : '#e5e7eb';
-      });
-      c.update();
-    }
-  }
-  // Plotly 热力图（如果在当前页）
-  if(window.Plotly){
-    const el = document.getElementById('hm-plot');
-    if(el && el.data){
-      window.Plotly.relayout(el, {
-        paper_bgcolor: theme==='dark' ? '#0b1222' : '#ffffff',
-        plot_bgcolor:   theme==='dark' ? '#0b1222' : '#ffffff',
-        'xaxis.tickfont.color': theme==='dark' ? '#e5e7eb' : '#111827',
-        'yaxis.tickfont.color': theme==='dark' ? '#e5e7eb' : '#111827',
-        'xaxis.gridcolor': theme==='dark' ? 'rgba(255,255,255,.12)' : '#e5e7eb',
-        'yaxis.gridcolor': theme==='dark' ? 'rgba(255,255,255,.12)' : '#e5e7eb'
-      });
-    }
-  }
-  // 给其它模块一个 hook
-  window.__theme = theme;
-  window.dispatchEvent(new CustomEvent('themechange', { detail:{ theme } }));
-}
-
-(function initTheme(){
-  const saved = localStorage.getItem('theme');
-  const theme = saved || (getSystemPrefersDark() ? 'dark' : 'light');
-  applyTheme(theme);
-  if(themeBtn){
-    themeBtn.onclick = ()=> applyTheme((document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark');
-  }
-})();
