@@ -1,4 +1,4 @@
-/* analyze module: pie/line with grouping/sorting */
+/* analyze module: pie/line/bar with grouping/sorting */
 
 import { DataStore, Modules } from '../core.js';
 import { Agg } from '../lib/agg.js';
@@ -29,14 +29,15 @@ function buildUI(){
     ...opts.map(v => el('option', { value:String(v) }, String(v)))
   );
 
-  const chartType = sel('chartType', ['pie','line']);
+  // 支持 pie / line / bar
+  const chartType = sel('chartType', ['pie','line','bar']);
   const xCol      = sel('xCol', ['（选择…）', ...headers]);
   const yCol      = sel('yCol', ['（选择…）', ...headers]);
 
-  const aggOp     = sel('aggOp', ['count','sum','avg']);              // 饼图/折线
-  const sortX     = sel('sortX', ['auto','label-asc','value-desc']);  // 饼图
-  const topN      = sel('topN', ['no-limit','top-5','top-8','top-10']);
-  const dateGran  = sel('dateGran', ['day','week','month']);          // 折线
+  const aggOp     = sel('aggOp', ['count','sum','avg']);                // 全部图表用
+  const sortX     = sel('sortX', ['auto','label-asc','value-desc']);    // 饼图/柱状
+  const topN      = sel('topN', ['no-limit','top-5','top-8','top-10']); // 饼图/柱状
+  const dateGran  = sel('dateGran', ['day','week','month']);            // 折线
 
   const btn = el('button', { class:'btn sm', id:'btnRender' }, '生成图表');
 
@@ -45,7 +46,7 @@ function buildUI(){
     el('span', { class:'chip' }, 'X列'), xCol,
     el('span', { class:'chip' }, 'Y列'), yCol,
     el('span', { class:'chip' }, '聚合'), aggOp,
-    el('span', { class:'chip' }, '排序/TopN（饼图）'), sortX, topN,
+    el('span', { class:'chip' }, '排序/TopN（饼&柱）'), sortX, topN,
     el('span', { class:'chip' }, '时间粒度（折线）'), dateGran,
     btn
   );
@@ -61,88 +62,27 @@ function buildUI(){
   );
 }
 
-function renderPie(cfg){
-  const { xCol, yCol, op, sort, top, rows } = cfg;
-
-  // 1) 归一化分类并建立“漂亮标签”映射
-  const mapKeyToPretty = new Map();
-  const gmap = Agg.groupBy(rows, r => {
-    const raw = r[xCol];
-    const key = Agg.normCat(raw);
-    if (!mapKeyToPretty.has(key)){
-      mapKeyToPretty.set(key, Agg.trim(raw==null?'':String(raw)));
-    }
-    return key;
-  });
-
-  // 2) 聚合（count/sum/avg）
-  const sumArr = Agg.summarize(gmap, r => yCol ? r[yCol] : 1, op);
-
-  // 3) 排序 & TopN
-  let arr = sumArr;
-  if (sort === 'label-asc') arr = Agg.sortByKeyAsc(arr);
-  else if (sort === 'value-desc') arr = Agg.sortByValueDesc(arr);
-  else arr = Agg.sortByValueDesc(arr); // auto
-
-  const n = top === 'top-5' ? 5 : top === 'top-8' ? 8 : top === 'top-10' ? 10 : Infinity;
-  if (Number.isFinite(n)) arr = Agg.topNWithOther(arr, n);
-
-  const labels = arr.map(d => mapKeyToPretty.get(d.key) || d.key || '(空)');
-  const data   = arr.map(d => d.value);
-
-  drawChart('pie', labels, [{ label: `${op}(${yCol || 'count'})`, data }]);
-
-  return { groups: arr.length, sum: data.reduce((a,b)=>a+(Number(b)||0),0) };
-}
-
-function renderLine(cfg){
-  const { xCol, yCol, op, gran, rows } = cfg;
-
-  // 1) 解析日期并落桶（日/周/月）
-  const valid = [];
-  for (const r of rows){
-    const d = Agg.parseDate(r[xCol]);
-    if (d) valid.push({ d: Agg.floorToBucket(d, gran), row: r });
-  }
-  if (valid.length === 0) throw new Error('未能解析任何日期，请检查 X 列是否为日期。');
-
-  // 2) 分组到桶
-  const gmap = Agg.groupBy(valid, v => v.d.getTime());
-
-  // 3) 聚合
-  const sumArr = Agg.summarize(gmap, v => v.row[yCol], op);
-
-  // 4) 按时间升序
-  sumArr.sort((a,b)=> Number(a.key) - Number(b.key));
-
-  const labels = sumArr.map(d => {
-    const dt = new Date(Number(d.key));
-    if (gran === 'month') return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-    return `${dt.getMonth()+1}/${dt.getDate()}`;
-  });
-  const data   = sumArr.map(d => d.value);
-
-  drawChart('line', labels, [{ label: `${op}(${yCol})`, data }], { tension: 0.25 });
-
-  return { points: data.length, min: Math.min(...data), max: Math.max(...data) };
-}
-
-let _chart; // Chart.js 实例
+// —— 通用：画图（缺库时给出提示） —— //
+let _chart;
 function drawChart(type, labels, datasets, extraOpts={}){
+  if (!window.Chart){
+    const meta = document.getElementById('analyzeMeta');
+    if (meta) meta.textContent = '⚠️ Chart.js 未加载。请检查 index.html 的 CDN 引入是否存在且在 app.js 之前。';
+    return;
+  }
   const canvas = document.getElementById('analyzeChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-
   const isDark = (document.documentElement.getAttribute('data-theme') === 'dark');
 
   if (_chart) _chart.destroy();
-  // eslint-disable-next-line no-undef
+  /* global Chart */
   _chart = new Chart(ctx, {
     type,
     data: { labels, datasets: datasets.map(ds => ({
       ...ds,
       fill: false,
-      borderWidth: 2,
+      borderWidth: (type==='bar'? 0 : 2),
       hoverOffset: (type==='pie'? 6 : 0),
     })) },
     options: {
@@ -169,6 +109,90 @@ function drawChart(type, labels, datasets, extraOpts={}){
   });
 }
 
+// —— 饼图（分类聚合 + 排序 + TopN） —— //
+function renderPie(cfg){
+  const { xCol, yCol, op, sort, top, rows } = cfg;
+
+  const pretty = new Map();
+  const gmap = Agg.groupBy(rows, r => {
+    const raw = r[xCol];
+    const key = Agg.normCat(raw);
+    if (!pretty.has(key)) pretty.set(key, Agg.trim(raw==null?'':String(raw)));
+    return key;
+  });
+
+  const sumArr = Agg.summarize(gmap, r => yCol ? r[yCol] : 1, op);
+
+  let arr = sumArr;
+  if (sort === 'label-asc') arr = Agg.sortByKeyAsc(arr);
+  else if (sort === 'value-desc') arr = Agg.sortByValueDesc(arr);
+  else arr = Agg.sortByValueDesc(arr); // auto
+
+  const n = top === 'top-5' ? 5 : top === 'top-8' ? 8 : top === 'top-10' ? 10 : Infinity;
+  if (Number.isFinite(n)) arr = Agg.topNWithOther(arr, n);
+
+  const labels = arr.map(d => pretty.get(d.key) || d.key || '(空)');
+  const data   = arr.map(d => d.value);
+
+  drawChart('pie', labels, [{ label: `${op}(${yCol || 'count'})`, data }]);
+  return { groups: arr.length, sum: data.reduce((a,b)=>a+(Number(b)||0),0) };
+}
+
+// —— 柱状图（分类聚合 + 排序 + TopN） —— //
+function renderBar(cfg){
+  const { xCol, yCol, op, sort, top, rows } = cfg;
+
+  const pretty = new Map();
+  const gmap = Agg.groupBy(rows, r => {
+    const raw = r[xCol];
+    const key = Agg.normCat(raw);
+    if (!pretty.has(key)) pretty.set(key, Agg.trim(raw==null?'':String(raw)));
+    return key;
+  });
+
+  const sumArr = Agg.summarize(gmap, r => yCol ? r[yCol] : 1, op);
+
+  let arr = sumArr;
+  if (sort === 'label-asc') arr = Agg.sortByKeyAsc(arr);
+  else if (sort === 'value-desc') arr = Agg.sortByValueDesc(arr);
+  else arr = Agg.sortByValueDesc(arr); // auto
+
+  const n = top === 'top-5' ? 5 : top === 'top-8' ? 8 : top === 'top-10' ? 10 : Infinity;
+  if (Number.isFinite(n)) arr = Agg.topNWithOther(arr, n);
+
+  const labels = arr.map(d => pretty.get(d.key) || d.key || '(空)');
+  const data   = arr.map(d => d.value);
+
+  drawChart('bar', labels, [{ label: `${op}(${yCol || 'count'})`, data }]);
+  return { bars: arr.length, sum: data.reduce((a,b)=>a+(Number(b)||0),0) };
+}
+
+// —— 折线图（日期解析 + 落桶 + 聚合 + 时间升序） —— //
+function renderLine(cfg){
+  const { xCol, yCol, op, gran, rows } = cfg;
+
+  const valid = [];
+  for (const r of rows){
+    const d = Agg.parseDate(r[xCol]);
+    if (d) valid.push({ d: Agg.floorToBucket(d, gran), row: r });
+  }
+  if (valid.length === 0) throw new Error('未能解析任何日期，请检查 X 列是否为日期。');
+
+  const gmap = Agg.groupBy(valid, v => v.d.getTime());
+  const sumArr = Agg.summarize(gmap, v => v.row[yCol], op);
+  sumArr.sort((a,b)=> Number(a.key) - Number(b.key));
+
+  const labels = sumArr.map(d => {
+    const dt = new Date(Number(d.key));
+    if (gran === 'month') return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+    return `${dt.getMonth()+1}/${dt.getDate()}`;
+  });
+  const data   = sumArr.map(d => d.value);
+
+  drawChart('line', labels, [{ label: `${op}(${yCol})`, data }], { tension: 0.25 });
+  return { points: data.length, min: Math.min(...data), max: Math.max(...data) };
+}
+
 function analyzeModule(){
   if (!DataStore.rows.length){
     document.getElementById('view').innerHTML =
@@ -184,13 +208,13 @@ function analyzeModule(){
   const btn  = document.getElementById('btnRender');
 
   btn.addEventListener('click', ()=>{
-    const chartType = document.getElementById('chartType').value;      // pie / line
+    const chartType = document.getElementById('chartType').value;      // pie / line / bar
     const xCol      = document.getElementById('xCol').value;
     const yCol      = document.getElementById('yCol').value;
-    const aggOp     = document.getElementById('aggOp').value;           // count/sum/avg
-    const sortX     = document.getElementById('sortX').value;           // pie only
-    const topN      = document.getElementById('topN').value;            // pie only
-    const dateGran  = document.getElementById('dateGran').value;        // line only
+    const aggOp     = document.getElementById('aggOp').value;
+    const sortX     = document.getElementById('sortX').value;
+    const topN      = document.getElementById('topN').value;
+    const dateGran  = document.getElementById('dateGran').value;
 
     const rows = DataStore.rows.filter(r => r != null);
 
@@ -202,11 +226,18 @@ function analyzeModule(){
           xCol,
           yCol: yCol==='（选择…）' ? null : yCol,
           op: (yCol==='（选择…）' ? 'count' : aggOp),
-          sort: sortX,
-          top: topN,
-          rows
+          sort: sortX, top: topN, rows
         });
         meta.textContent = `已分组 ${info.groups} 类。`;
+      }else if (chartType === 'bar'){
+        if (xCol === '（选择…）') throw new Error('请选择 X 列（分类）。');
+        info = renderBar({
+          xCol,
+          yCol: yCol==='（选择…）' ? null : yCol,
+          op: (yCol==='（选择…）' ? 'count' : aggOp),
+          sort: sortX, top: topN, rows
+        });
+        meta.textContent = `柱数 ${info.bars}。`;
       }else{
         if (xCol === '（选择…）' || yCol === '（选择…）')
           throw new Error('折线图需要 X=日期列、Y=数值列。');
@@ -220,4 +251,3 @@ function analyzeModule(){
 }
 
 Modules.set('analyze', analyzeModule);
-
