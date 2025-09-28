@@ -1,18 +1,17 @@
-/* Notion-like minimal + light/dark + floating glass controls (95% transparent) */
+/* ===== Notion-like minimal + light/dark ===== */
 :root{
   --sidebar:260px;
+  --sidebar-compact:130px;          /* 压缩后 50% 宽度 */
   --radius:6px;
 
-  /* 主内容为工具组让出的空间：由 JS 写入展开时的真实高度 + 18px 安全间距 */
-  --controls-h: 64px;   /* will be updated by JS */
-  --controls-gap: 18px; /* smaller gap (≈减少2/3) */
+  /* 工具组占位：由 JS 写入“展开时真实高度” */
+  --controls-h: 64px;
+  --controls-gap: 18px;
 
   /* light */
   --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
   --primary:#2563eb; --border:#e5e7eb; --table-header:#f8fafc;
-
-  /* 95% 透明（0.05 不透明） */
-  --glass: rgba(255,255,255,.05);
+  --glass: rgba(255,255,255,.05);   /* 95% 透明感 */
 }
 :root[data-theme="dark"]{
   --bg:#0f172a; --surface:#0b1222; --fg:#e5e7eb; --muted:#a3aab7;
@@ -20,7 +19,8 @@
   --glass: rgba(11,18,34,.05);
 }
 
-*{box-sizing:border-box}
+*{ box-sizing:border-box }
+html,body{ height:100% }
 body{
   margin:0; background:var(--bg); color:var(--fg);
   font:15px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
@@ -28,90 +28,126 @@ body{
 }
 
 /* ===== Layout ===== */
-.app{display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh}
+.app{
+  display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh
+}
+body.sidebar-compact .app{
+  grid-template-columns:var(--sidebar-compact) 1fr;
+}
+
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
   border-right:1px solid var(--border);
   background:color-mix(in oklab, var(--bg) 92%, var(--fg));
   display:flex; flex-direction:column;
-  transition:transform .5s cubic-bezier(.22,.61,.36,1);
+  transition:transform .7s cubic-bezier(.22,.61,.36,1), width .7s cubic-bezier(.22,.61,.36,1);
+  position:relative;                 /* 允许内部绝对定位把手 */
+  overflow:hidden;                   /* 压缩时不漏出 */
 }
-.brand{display:flex; align-items:center; gap:8px; margin-bottom:12px}
-.brand h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.2px}
-.theme-toggle.tiny{padding:6px 10px; font-size:12px}
+.brand{
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.brand h1{ margin:0; font-size:18px; font-weight:700; letter-spacing:.2px; white-space:nowrap }
+.theme-toggle.tiny{ padding:6px 10px; font-size:12px }
 
-.nav{display:flex; flex-direction:column; gap:8px; flex:1}
-.nav-item{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); overflow:hidden}
-.nav-head{padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between}
-.nav-head .title{display:flex; align-items:center; gap:8px}
-.nav-item:hover .nav-head{background:var(--table-header)}
+/* 圆形 D 徽章（紧凑时显示） */
+.brand .badge-D{
+  width:34px; height:34px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; letter-spacing:.5px;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+}
+body.sidebar-compact .brand h1{ display:none }            /* 紧凑时隐藏 “Data Lab” 文本 */
+body.sidebar-compact .brand .badge-D{ display:flex }
+body:not(.sidebar-compact) .brand .badge-D{ display:none }/* 展开时隐藏徽章 */
+
+/* 侧栏内部右上角把手（不探出） */
+#sidebarPin{
+  position:absolute; top:10px; right:10px; z-index:1100;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1; cursor:pointer;
+}
+
+/* 导航与子菜单（单行省略号） */
+.nav{ display:flex; flex-direction:column; gap:8px; flex:1; min-width:0 }
+.nav-item{ border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); overflow:hidden }
+.nav-head{
+  padding:10px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+}
+.nav-head .title{ display:flex; align-items:center; gap:8px; min-width:0; width:100% }
+.nav-head .title span{
+  display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; /* 单行省略 */
+}
+.nav-item:hover .nav-head{ background:var(--table-header) }
 .submenu{
   border-top:1px solid var(--border); padding:0 8px 0 18px;
   max-height:0; opacity:0; transform:translateY(-2px);
   overflow:hidden;
   transition:max-height .2s ease, opacity .2s ease, transform .2s ease, padding .2s ease;
 }
-.nav-item.open .submenu{padding:6px 8px 10px 18px; max-height:420px; opacity:1; transform:translateY(0)}
-.submenu a{display:block; padding:6px 8px; border-radius:6px; color:inherit; text-decoration:none}
-.submenu a:hover{background:var(--table-header)}
-.nav-footer{margin-top:12px}
-.nav-footer .btn.small{padding:6px 10px; font-size:12px}
+.nav-item.open .submenu{ padding:6px 8px 10px 18px; max-height:420px; opacity:1; transform:translateY(0) }
+.submenu a{
+  display:block; padding:6px 8px; border-radius:6px; color:inherit; text-decoration:none;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.submenu a:hover{ background:var(--table-header) }
 
-/* 主内容顶部让位（始终按“展开时高度”+18px，让位不随折叠变化） */
+.nav-footer{ margin-top:12px }
+.nav-footer .btn.small{ padding:6px 10px; font-size:12px }
+
+/* 主内容为工具组留白：始终按“展开时高度 + 18px”，不随折叠变化 */
 .main{
   padding:18px;
-  padding-top: calc(var(--controls-h) + var(--controls-gap)) !important;
+  padding-top:calc(var(--controls-h) + var(--controls-gap)) !important;
 }
 
-.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
-.h{margin:0 0 8px; font-size:18px; font-weight:600}
-.muted{color:var(--muted)}
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px }
+.h{ margin:0 0 8px; font-size:18px; font-weight:600 }
+.muted{ color:var(--muted) }
 
-/* ===== Inputs / Buttons ===== */
-.inline{display:flex; align-items:center; gap:6px}
-.badge,.chip{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)}
-.chip{padding:2px 8px}
-.btn{appearance:none; border:1px solid var(--border); background:var(--primary); color:#fff; padding:8px 12px; border-radius:var(--radius); cursor:pointer; font-weight:600; box-shadow:none}
-.btn.secondary{background:var(--surface); color:var(--fg)}
-.btn.ghost{background:transparent; color:var(--primary); border-color:transparent}
-.btn:hover{filter:brightness(0.98)}
-.btn.sm{padding:6px 10px; font-size:13px}
-input[type=file], select, input, textarea{border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 10px; border-radius:var(--radius)}
-select.sm, input.sm{padding:6px 8px; font-size:13px}
-.w-72{width:72px}
+/* ===== 按钮/输入 ===== */
+.inline{ display:flex; align-items:center; gap:6px }
+.badge,.chip{ border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface) }
+.chip{ padding:2px 8px }
+.btn{ appearance:none; border:1px solid var(--border); background:var(--primary); color:#fff; padding:8px 12px; border-radius:var(--radius); cursor:pointer; font-weight:600; box-shadow:none }
+.btn.secondary{ background:var(--surface); color:var(--fg) }
+.btn.ghost{ background:transparent; color:var(--primary); border-color:transparent }
+.btn:hover{ filter:brightness(0.98) }
+.btn.sm{ padding:6px 10px; font-size:13px }
+input[type=file], select, input, textarea{ border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 10px; border-radius:var(--radius) }
+select.sm, input.sm{ padding:6px 8px; font-size:13px }
+.w-72{ width:72px }
 
-/* ===== Table ===== */
-table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
-th,td{border:1px solid var(--border); padding:6px 8px; text-align:left}
-th{background:var(--table-header)}
-.grid{display:grid; gap:12px}
-.sep{height:1px; background:var(--border); margin:12px 0}
-.kbd{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--fg); background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border)}
-.pass{color:#16a34a}.fail{color:#dc2626}
+/* ===== 表格 ===== */
+table{ width:100%; border-collapse:collapse; font-size:13px; background:var(--surface) }
+th,td{ border:1px solid var(--border); padding:6px 8px; text-align:left }
+th{ background:var(--table-header) }
+.grid{ display:grid; gap:12px }
+.sep{ height:1px; background:var(--border); margin:12px 0 }
+.kbd{ font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--fg); background:var(--table-header); padding:2px 6px; border-radius:6px; border:1px solid var(--border) }
+.pass{ color:#16a34a }.fail{ color:#dc2626 }
 
-/* ===== Floating controls (always-on glass bar) ===== */
+/* ===== 悬浮工具组（玻璃） ===== */
 .controls-wrap{
   position:fixed; top:12px; left:calc(var(--sidebar) + 24px); right:24px; z-index:50;
-  pointer-events:none; /* 只让内部面板可交互 */
+  pointer-events:none;
+  transition:left .3s ease;
+}
+body.sidebar-compact .controls-wrap{
+  left:calc(var(--sidebar-compact) + 24px);   /* 紧凑时自动左移，避免被遮挡 */
 }
 .controls{
   pointer-events:auto;
   background:var(--glass);
-  backdrop-filter: saturate(120%) blur(10px);
-  -webkit-backdrop-filter: saturate(120%) blur(10px);
+  backdrop-filter:saturate(120%) blur(10px);
+  -webkit-backdrop-filter:saturate(120%) blur(10px);
   border:1px solid var(--border);
   border-radius:var(--radius);
   overflow:hidden;
-
-  /* 扇形收起动画：更慢、更柔和 */
-  transition: transform .6s cubic-bezier(.22,.61,.36,1), opacity .6s ease, visibility .6s;
-  transform-origin: right center;
+  transition: transform .8s cubic-bezier(.22,.61,.36,1), opacity .8s ease, visibility .8s;
+  transform-origin:right center; /* 收扇子效果 */
 }
-.controls-row{
-  display:flex; align-items:center; gap:8px; padding:8px 10px;
-  white-space:nowrap;
-}
-/* 行内收起按钮（与左上角风格一致） */
+.controls-row{ display:flex; align-items:center; gap:8px; padding:8px 10px; white-space:nowrap }
 .control-toggle.tiny{
   margin-left:auto; border:1px solid var(--border);
   background:var(--surface); color:var(--fg);
@@ -119,67 +155,30 @@ th{background:var(--table-header)}
   font-size:12px; line-height:1; cursor:pointer;
 }
 
-/* 折叠为“扇子合上”+向右滑出（不影响正文占位） */
+/* 扇形合拢（隐藏） */
 #controlsWrap.is-collapsed .controls{
-  transform: perspective(900px) rotateY(-16deg) scaleX(.86) translateX(26%);
-  opacity: 0; visibility: hidden;
+  transform:perspective(900px) rotateY(-16deg) scaleX(.86) translateX(26%);
+  opacity:0; visibility:hidden;
 }
 
-/* === 固定右上工具组把手：位置永远不变 === */
+/* 固定右上工具组把手：坐标锁死 */
 #controlsHandle{
   position:fixed; top:14px; right:18px; z-index:1200;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1;
-  cursor:pointer; box-shadow:none; transition:opacity .2s ease, transform .2s ease;
+  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1; cursor:pointer; box-shadow:none;
 }
-/* 展开：完全隐藏避免“虚影”；收起：可点 */
-body:not(.controls-collapsed) #controlsHandle{ opacity:0; pointer-events:none; }
-body.controls-collapsed      #controlsHandle{ opacity:.95; }
+body:not(.controls-collapsed) #controlsHandle{ opacity:0; pointer-events:none } /* 展开隐藏 */
+body.controls-collapsed      #controlsHandle{ opacity:.95 }
 
-/* === 侧栏把手（展开态）：吸附在侧栏右上角 === */
-.sidebar{ position:sticky; top:0; }
-#sidebarPin{
-  position:absolute; top:12px; right:-14px; z-index:1100;
-  border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1; cursor:pointer;
-  box-shadow:none;
-}
-
-/* === 侧栏收起：彻底移走且不漏边 === */
-body.sidebar-collapsed .sidebar{
-  transform:translateX(-100%);
-  border-right:0 !important;
-  box-shadow:none !important;
-  visibility:hidden;             /* 内容彻底不可见 */
-}
-body.sidebar-collapsed .app{ grid-template-columns:0 1fr; }
-body.sidebar-collapsed{ overflow-x:hidden; }   /* 不出现横向残影 */
-body.sidebar-collapsed .controls-wrap{ left:12px; } /* 工具组左移对齐 */
-
-/* === 侧栏收起态：“D” 圆按钮（左上角浮动） === */
-#sidebarDock{
-  position:fixed; top:14px; left:16px; z-index:1200;
-  width:32px; height:32px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-weight:800; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
-  letter-spacing:.5px;
-  border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  box-shadow:none; cursor:pointer; transition:transform .2s ease, opacity .2s ease;
-}
-/* 仅在收起时显示“D”按钮；展开时隐藏 */
-body.sidebar-collapsed #sidebarDock{ opacity:.98; pointer-events:auto; }
-body:not(.sidebar-collapsed) #sidebarDock{ opacity:0; pointer-events:none; }
-
-/* 保证侧栏容器能放绝对定位的 #sidebarPin */
-.sidebar{ position:relative; }
-
-/* ===== Responsive ===== */
+/* ===== 响应式 ===== */
 @media (max-width:1000px){
-  :root{ --sidebar:220px; }
+  :root{ --sidebar:220px; --sidebar-compact:120px }
   .controls-wrap{ left:calc(var(--sidebar) + 12px); right:12px }
+  body.sidebar-compact .controls-wrap{ left:calc(var(--sidebar-compact) + 12px) }
 }
 @media (max-width:900px){
-  .app{grid-template-columns:1fr}
-  :root{ --sidebar:0px; }
-  .controls-wrap{ left:12px; right:12px }
+  .app{ grid-template-columns:1fr }
+  :root{ --sidebar:0px; --sidebar-compact:0px }
+  .controls-wrap{ left:12px; right:12px } /* 小屏直接顶边 */
 }
+
