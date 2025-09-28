@@ -34,6 +34,7 @@ body{
   border-right:1px solid var(--border);
   background:color-mix(in oklab, var(--bg) 92%, var(--fg));
   display:flex; flex-direction:column;
+  transition:transform .5s cubic-bezier(.22,.61,.36,1);
 }
 .brand{display:flex; align-items:center; gap:8px; margin-bottom:12px}
 .brand h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.2px}
@@ -124,15 +125,31 @@ th{background:var(--table-header)}
   opacity: 0; visibility: hidden;
 }
 
-/* 固定把手：仅在折叠时显示（由 JS 控制 display） */
+/* —— 固定右上“工具组把手”：位置不变（仅切换透明度和可点击） —— */
 #controlsHandle{
   position:fixed; top:16px; right:24px; z-index:51;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
   padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
-  cursor:pointer; opacity:.9; box-shadow:none;
-  transition: filter .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+  cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
 }
+body:not(.controls-collapsed) #controlsHandle{ opacity:.15; pointer-events:none; }
+body.controls-collapsed      #controlsHandle{ opacity:.9;  pointer-events:auto; }
 #controlsHandle:hover{ filter:brightness(0.98) }
+
+/* —— 左侧栏把手 + 侧栏收起 —— */
+#sidebarHandle{
+  position:fixed; top:16px; left:12px; z-index:52;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+  padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
+  cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
+}
+body:not(.sidebar-collapsed) #sidebarHandle{ opacity:.15; pointer-events:none; }
+body.sidebar-collapsed       #sidebarHandle{ opacity:.9;  pointer-events:auto; }
+#sidebarHandle:hover{ filter:brightness(0.98) }
+
+body.sidebar-collapsed .sidebar{ transform:translateX(-100%); }
+body.sidebar-collapsed .app{ grid-template-columns:0 1fr; }
+body.sidebar-collapsed .controls-wrap{ left:12px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1000px){
