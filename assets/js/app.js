@@ -207,27 +207,36 @@ window.applyTheme = function applyTheme(theme){
 })();
 
 /* =========================================================
- * 侧栏：悬停展开 + 点击保持（子菜单）
+ * 侧栏：桌面 hover，移动端 click（不依赖 hover）
  * =======================================================*/
 (function setupSidebarHover(){
   const items = [...document.querySelectorAll('.nav-item')];
   const heads = [...document.querySelectorAll('.nav-head')];
   if (items[0]) items[0].classList.add('open');
 
+  const isTouch = matchMedia('(hover: none)').matches;
+
   heads.forEach(head=>{
     const item = head.closest('.nav-item');
-    head.addEventListener('mouseenter', ()=>{
-      if (!item.classList.contains('open')){
-        items.forEach(i=>i.classList.remove('open'));
-        item.classList.add('open');
-      }
-    });
+
+    if (!isTouch){
+      // 桌面：hover 展开 + click 切换
+      head.addEventListener('mouseenter', ()=>{
+        if (!item.classList.contains('open')){
+          items.forEach(i=>i.classList.remove('open'));
+          item.classList.add('open');
+        }
+      });
+    }
+
+    // 两端都允许 click 切换
     head.addEventListener('click', ()=>{
       if (item.classList.contains('open')) item.classList.remove('open');
       else { items.forEach(i=>i.classList.remove('open')); item.classList.add('open'); }
     });
   });
 })();
+
 
 /* =========================================================
  * 悬浮工具组：测高 + 占位固定 + 扇形缓收（右上把手固定）
@@ -334,4 +343,43 @@ window.applyTheme = function applyTheme(theme){
       setThemeBtnForCompact(document.body.classList.contains('sidebar-compact'));
     };
   }
+})();
+
+/* =========================================================
+ * Mobile drawer：手机上把侧边栏作为抽屉显示
+ * =======================================================*/
+(function mobileDrawer(){
+  const isTouch = matchMedia('(max-width: 900px)').matches;
+  if (!isTouch) return;
+
+  // 遮罩
+  let mask = document.querySelector('.drawer-mask');
+  if (!mask){
+    mask = document.createElement('div');
+    mask.className = 'drawer-mask';
+    document.body.appendChild(mask);
+  }
+
+  // 品牌区内的把手（已在 setupSidebarPin 里创建，这里只绑定手机行为）
+  const pin = document.getElementById('sidebarPin');
+  if (pin){
+    pin.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const opened = document.body.classList.toggle('sidebar-open');
+      // 打开抽屉时，顺便进入“紧凑/展开”的你自己既定状态，这里不改 sidebar-compact
+      mask.style.display = opened ? 'block' : 'none';
+    }, {capture:true});
+  }
+
+  // 点击遮罩关闭
+  mask.addEventListener('click', ()=>{
+    document.body.classList.remove('sidebar-open');
+    mask.style.display = 'none';
+  });
+
+  // 视口尺寸变化时关闭抽屉
+  window.addEventListener('resize', ()=>{
+    document.body.classList.remove('sidebar-open');
+    mask.style.display = 'none';
+  }, {passive:true});
 })();
