@@ -209,3 +209,85 @@ body.controls-collapsed      #controlsHandle{ opacity:.95 }
 #controlsWrap{ pointer-events: none !important; }
 #controlsWrap .controls{ pointer-events: auto !important; }
 
+/* @RESPONSIVE: mobile fixes */
+@media (max-width: 900px){
+
+  /* 1) 侧边栏改为抽屉：默认隐藏，仅保留左上按钮 */
+  :root{ --sidebar:0px; --sidebar-compact:0px; }
+
+  .app{ grid-template-columns: 1fr !important; }
+
+  .sidebar{
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 78%;
+    max-width: 320px;
+    background: var(--surface);
+    transform: translateX(-100%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    transition: transform .35s cubic-bezier(.22,.7,.18,1);
+    z-index: 1000;
+    /* 让抽屉内部可以滚 */
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  body.sidebar-open .sidebar{ transform: translateX(0); }
+
+  /* 顶部品牌区内的把手居中到这一行 */
+  .brand{ position: relative; padding-right: 46px; }
+  #sidebarPin{
+    position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+    padding: 10px 12px; font-size: 14px; /* 触控更易点 */
+  }
+
+  /* 遮罩层（点遮罩即可关闭抽屉） */
+  .drawer-mask{
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    opacity: 0; visibility: hidden; transition: opacity .25s ease;
+    z-index: 999;
+  }
+  body.sidebar-open .drawer-mask{ opacity:1; visibility:visible; }
+
+  /* 2) 顶部工具组：适配安全区，缩小左右边距 */
+  .controls-wrap{
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    top: calc(8px + env(safe-area-inset-top));
+  }
+  .controls-row{
+    gap: 6px; padding: 8px;
+  }
+  .controls-row > *{
+    max-width: 100%;
+  }
+  /* 表单控件更易点 */
+  .btn, .btn.sm, input, select{
+    min-height: 44px;
+  }
+
+  /* 3) 主体上边距：让出工具组高度（JS 会写 --controls-h），移动端再加一点间距 */
+  .main{
+    padding: 12px;
+    padding-top: calc(var(--controls-h) + 12px) !important;
+  }
+
+  /* 4) 表格：允许横向滚动 & 表头粘住 */
+  .card{ padding: 12px; }
+  table{ display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  thead, tr:first-child{ position: sticky; top: 0; z-index: 1; }
+  th{ background: var(--table-header); }
+
+  /* 5) 子菜单区域更易点，避免误触 */
+  .submenu a{ padding: 10px 10px; }
+
+  /* 6) 主题按钮：紧凑尺寸 */
+  body.sidebar-compact .theme-toggle,
+  body:not(.sidebar-compact) .theme-toggle{
+    min-width: 44px; min-height: 34px;
+  }
+
+  /* 7) 右上工具把手：留出安全区 */
+  #controlsHandle{ top: calc(10px + env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+}
+
+/* 非 iOS 也安全（无 env() 时浏览器忽略，已在上面给了 px 兜底） */
