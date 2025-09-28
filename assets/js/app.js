@@ -11,6 +11,19 @@ import './modules/analyze.js';
 import './modules/histogram.js';
 import './modules/heatmap.js';
 import './modules/wordcloud.js';
+// —— 新增的小模块 ——
+// 分析
+import './modules/analyze-bar.js';
+import './modules/analyze-line.js';
+import './modules/analyze-boxplot.js';
+import './modules/analyze-pie.js';
+// 清洗
+import './modules/clean-drop-empty.js';
+import './modules/clean-trim.js';
+import './modules/clean-dedupe.js';
+import './modules/clean-fill-missing.js';
+import './modules/clean-drop-cols.js';
+import './modules/clean-type-cast.js';
 
 const $ = (s)=>document.querySelector(s);
 
