@@ -110,7 +110,7 @@ $('#previewRows')?.addEventListener('change', () => {
 });
 
 /* =========================================================
- * 左下：运行自检（内置用例）
+ * 左下：运行自检
  * =======================================================*/
 $('#btnTests')?.addEventListener('click', () => {
   const NEED=/[",\n]/;
@@ -136,7 +136,7 @@ $('#btnTests')?.addEventListener('click', () => {
 });
 
 /* =========================================================
- * 初始欢迎页
+ * 初始欢迎
  * =======================================================*/
 const view = $('#view');
 if (view){
@@ -146,7 +146,7 @@ if (view){
 }
 
 /* =========================================================
- * 主题切换（展开时：带文案；紧凑时：仅图标）
+ * 主题切换（展开=带文案；紧凑=仅图标）
  * =======================================================*/
 const themeBtn = $('#themeToggle');
 
@@ -154,20 +154,18 @@ function prefersDark(){
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-// 暴露到 window，供其它逻辑 hook（如侧栏紧凑模式切换时同步文案/图标）
 window.applyTheme = function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   try{ localStorage.setItem('theme', theme); }catch{}
 
   const compact = document.body.classList.contains('sidebar-compact');
   if (themeBtn){
-    // 紧凑：仅图标；展开：带文案
     themeBtn.textContent = compact
       ? (theme==='dark' ? '🌞' : '🌙')
       : (theme==='dark' ? '🌞 浅色' : '🌙 深色');
   }
 
-  // —— 可选：图表主题联动（Chart.js）
+  // Chart.js 主题联动（可选）
   if (window.Chart){
     const dark = theme==='dark';
     window.Chart.defaults.color = dark ? '#e5e7eb' : '#111827';
@@ -183,7 +181,7 @@ window.applyTheme = function applyTheme(theme){
     }
   }
 
-  // —— 可选：Plotly 主题联动（热力图）
+  // Plotly 主题联动（可选）
   if (window.Plotly){
     const el = document.getElementById('hm-plot');
     if (el && el.data){
@@ -239,20 +237,17 @@ window.applyTheme = function applyTheme(theme){
   const panel     = document.getElementById('controlsPanel');
   const btnInline = document.getElementById('controlsToggle');
 
-  // 清理重复把手，确保唯一
   document.querySelectorAll('#controlsHandle').forEach((n,i)=>{ if (i>0) n.remove(); });
 
-  // 固定坐标把手（右上角），展开态通过 CSS 隐藏至 opacity:0
   let handle = document.getElementById('controlsHandle');
   if (!handle){
     handle = document.createElement('button');
     handle.id = 'controlsHandle';
     handle.type = 'button';
-    handle.textContent = '⟨';  // 展开时向左（点击=收起）
+    handle.textContent = '⟨';
     document.body.appendChild(handle);
   }
 
-  // 记录“展开时”真实高度，正文留白始终按该值（折叠不改变）
   let measured = 64;
   function measure(){
     if (!panel) return;
@@ -264,7 +259,7 @@ window.applyTheme = function applyTheme(theme){
   function setCollapsed(collapsed){
     if (!wrap) return;
     wrap.classList.toggle('is-collapsed', !!collapsed);
-    document.body.classList.toggle('controls-collapsed', !!collapsed); // 控制把手显隐
+    document.body.classList.toggle('controls-collapsed', !!collapsed);
     if (btnInline) btnInline.textContent = collapsed ? '⟨' : '⟩';
     handle.textContent = collapsed ? '⟩' : '⟨';
     document.documentElement.style.setProperty('--controls-h', measured + 'px');
@@ -273,7 +268,6 @@ window.applyTheme = function applyTheme(theme){
   btnInline?.addEventListener('click', ()=> setCollapsed(!wrap.classList.contains('is-collapsed')));
   handle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始：展开 + 多次测高（抗字体回流）
   setCollapsed(false);
   const remeasure = ()=>{ if (!wrap.classList.contains('is-collapsed')) measure(); };
   window.addEventListener('resize', remeasure, { passive:true });
@@ -283,15 +277,14 @@ window.applyTheme = function applyTheme(theme){
 })();
 
 /* =========================================================
- * 侧栏把手：内部右上角；展开 ↔ 紧凑(仅压缩宽度，不全隐藏)
- *  - 紧凑时：品牌显示 DL 圆徽，主题按钮仅图标
- *  - 展开时：品牌显示 "Data Lab"，主题按钮带文案
+ * 侧栏把手：在品牌区内部右上角；展开 ↔ 紧凑(压缩宽度，不全隐藏)
+ *  - 紧凑：品牌显示 DL 圆徽，主题按钮仅图标
+ *  - 展开：品牌显示 "Data Lab"，主题按钮带文案
  * =======================================================*/
 (function setupSidebarPin(){
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
 
-  // —— 品牌区：自动补一个 DL 徽章（.badge-dl），不要求你改 HTML
   const brand = sidebar.querySelector('.brand');
   if (brand && !brand.querySelector('.badge-dl')){
     const dl = document.createElement('div');
@@ -300,7 +293,6 @@ window.applyTheme = function applyTheme(theme){
     brand.insertBefore(dl, brand.firstChild);
   }
 
-  // —— 主题按钮：根据展开/紧凑切换“带文案/仅图标”
   const themeBtnLocal = document.getElementById('themeToggle');
   function setThemeBtnForCompact(compact){
     if (!themeBtnLocal) return;
@@ -310,18 +302,15 @@ window.applyTheme = function applyTheme(theme){
       : (theme==='dark' ? '🌞 浅色' : '🌙 深色');
   }
 
-  // —— 保证只有一个把手（内部右上角）
   document.querySelectorAll('#sidebarPin').forEach((n,i)=>{ if (i>0) n.remove(); });
-  const brand = sidebar.querySelector('.brand');  // 上面已有 brand 变量就复用
   let pin = document.getElementById('sidebarPin');
   if (!pin){
     pin = document.createElement('button');
     pin.id = 'sidebarPin';
     pin.type = 'button';
-    pin.textContent = '⟨';
-    (brand || sidebar).appendChild(pin);          // ← 优先放进品牌区
+    pin.textContent = '⟨';                 // 展开状态（点击进入紧凑）
+    (brand || sidebar).appendChild(pin);   // 放进品牌区，保证与标题对齐
   }
-
 
   function setCompact(compact){
     document.body.classList.toggle('sidebar-compact', !!compact);
@@ -334,10 +323,10 @@ window.applyTheme = function applyTheme(theme){
     setCompact(compact);
   });
 
-  // 初始：展开模式 & 恢复“带文案”
+  // 初始：展开 & 恢复带文案
   setCompact(false);
 
-  // 当主题变更时，同步按钮文本（hook 全局 applyTheme）
+  // 主题变化时，同步按钮文本
   const origApply = window.applyTheme;
   if (typeof origApply === 'function'){
     window.applyTheme = function(theme){
