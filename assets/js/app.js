@@ -2,13 +2,13 @@
 
 import { DataStore, Modules, loadFile } from './core.js';
 
-// 适配器
+// 适配器（确保这些文件存在且内部执行了 registerAdapter / Adapters.set）
 import './adapters/csv.js';
 import './adapters/excel.js';
 import './adapters/sqlite.js';
 import './adapters/json.js';
 
-// 工具库 + 模块（先 lib 再模块）
+// 工具库/模块（你已有的即可）
 import './lib/agg.js';
 import './modules/clean.js';
 import './modules/analyze.js';
@@ -18,9 +18,7 @@ import './modules/wordcloud.js';
 
 const $  = (s) => document.querySelector(s);
 
-/* =========================================================
- * 基础工具
- * =======================================================*/
+/* ========== 公共小工具 ========== */
 export function escapeHTML(s){
   return String(s).replace(/[&<>"']/g, m => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -70,17 +68,15 @@ function ensureData(){
   }
 }
 
-/* =========================================================
- * 路由绑定（事件委托：支持后续渲染/移动端抽屉）
- * =======================================================*/
+/* ========== 路由（事件委托，支持后续渲染/移动端抽屉） ========== */
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-route]');
   if (!el) return;
 
-  e.preventDefault(); // 阻止 <a> 默认跳转
+  e.preventDefault();
   const route = el.getAttribute('data-route');
 
-  // 手机抽屉：点了菜单就关闭抽屉
+  // 手机抽屉：点击后关闭
   document.body.classList.remove('sidebar-open');
   const mask = document.querySelector('.drawer-mask');
   if (mask) mask.style.display = 'none';
@@ -105,9 +101,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-/* =========================================================
- * 悬浮工具面板：读取 / 预览 / 自检
- * =======================================================*/
+/* ========== 顶部工具组：读取 / 预览 / 自检 ========== */
 $('#btnLoad')?.addEventListener('click', async () => {
   const type = $('#adapterSelect')?.value;
   const file = $('#fileInput')?.files?.[0];
@@ -117,7 +111,8 @@ $('#btnLoad')?.addEventListener('click', async () => {
     renderMeta();
     renderTablePreview();
   }catch(e){
-    alert('解析失败：' + e);
+    alert('解析失败：' + (e?.message || e));
+    console.error(e);
   }
 });
 
@@ -150,9 +145,7 @@ $('#btnTests')?.addEventListener('click', () => {
   }
 });
 
-/* =========================================================
- * 初始欢迎
- * =======================================================*/
+/* ========== 初始欢迎 ========== */
 const view = $('#view');
 if (view){
   view.innerHTML =
@@ -160,43 +153,25 @@ if (view){
     '<p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
 }
 
-/* =========================================================
- * 主题切换（展开=带文案；紧凑=仅图标） + 图表主题适配
- * =======================================================*/
+/* ========== 主题切换 + 图表主题适配 ========== */
 const themeBtn = $('#themeToggle');
-
 function prefersDark(){
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
-
 window.applyTheme = function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   try{ localStorage.setItem('theme', theme); }catch{}
-
   const compact = document.body.classList.contains('sidebar-compact');
   if (themeBtn){
     themeBtn.textContent = compact
       ? (theme==='dark' ? '🌞' : '🌙')
       : (theme==='dark' ? '🌞 浅色' : '🌙 深色');
   }
-
-  // Chart.js
   if (window.Chart){
     const dark = theme==='dark';
     window.Chart.defaults.color = dark ? '#e5e7eb' : '#111827';
     window.Chart.defaults.borderColor = dark ? 'rgba(255,255,255,.16)' : '#e5e7eb';
-    if (window.__histChart){
-      const c = window.__histChart;
-      ['x','y'].forEach(ax=>{
-        c.options.scales[ax] = c.options.scales[ax] || {};
-        c.options.scales[ax].ticks = { ...(c.options.scales[ax].ticks||{}), color: window.Chart.defaults.color };
-        c.options.scales[ax].grid  = { ...(c.options.scales[ax].grid||{}),  color: dark ? 'rgba(255,255,255,.12)' : '#e5e7eb' };
-      });
-      c.update();
-    }
   }
-
-  // Plotly
   if (window.Plotly){
     const el = document.getElementById('hm-plot');
     if (el && el.data){
@@ -211,7 +186,6 @@ window.applyTheme = function applyTheme(theme){
     }
   }
 };
-
 (function initTheme(){
   const saved = (()=>{ try{ return localStorage.getItem('theme'); }catch{ return null; } })();
   window.applyTheme(saved || (prefersDark() ? 'dark' : 'light'));
@@ -221,9 +195,7 @@ window.applyTheme = function applyTheme(theme){
   });
 })();
 
-/* =========================================================
- * 侧栏：子菜单（桌面 hover，移动端 click）
- * =======================================================*/
+/* ========== 子菜单（桌面 hover，移动端 click） ========== */
 (function setupSidebarHover(){
   const items = [...document.querySelectorAll('.nav-item')];
   const heads = [...document.querySelectorAll('.nav-head')];
@@ -233,7 +205,6 @@ window.applyTheme = function applyTheme(theme){
 
   heads.forEach(head=>{
     const item = head.closest('.nav-item');
-
     if (!isTouch){
       head.addEventListener('mouseenter', ()=>{
         if (!item.classList.contains('open')){
@@ -249,9 +220,7 @@ window.applyTheme = function applyTheme(theme){
   });
 })();
 
-/* =========================================================
- * 悬浮工具组：测高 + 占位固定 + 扇形缓收（右上把手固定）
- * =======================================================*/
+/* ========== 悬浮工具组（测高 + 扇形缓收） ========== */
 (function setupControlsFloating(){
   const wrap      = document.getElementById('controlsWrap');
   const panel     = document.getElementById('controlsPanel');
@@ -296,11 +265,7 @@ window.applyTheme = function applyTheme(theme){
   window.addEventListener('load', remeasure);
 })();
 
-/* =========================================================
- * 侧栏把手：品牌区内部右上角；展开 ↔ 紧凑（压缩宽度，不全隐藏）
- *   - 紧凑：品牌显示 DL 圆徽，主题按钮仅图标
- *   - 展开：品牌显示 "Data Lab"，主题按钮带文案
- * =======================================================*/
+/* ========== 侧栏把手（品牌区内部右上角；展开 ↔ 紧凑） ========== */
 (function setupSidebarPin(){
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
@@ -328,8 +293,8 @@ window.applyTheme = function applyTheme(theme){
     pin = document.createElement('button');
     pin.id = 'sidebarPin';
     pin.type = 'button';
-    pin.textContent = '⟨';                 // 展开状态（点击进入紧凑）
-    (brand || sidebar).appendChild(pin);   // 放进品牌区，和标题对齐
+    pin.textContent = '⟨';
+    (brand || sidebar).appendChild(pin);
   }
 
   function setCompact(compact){
@@ -343,10 +308,8 @@ window.applyTheme = function applyTheme(theme){
     setCompact(compact);
   });
 
-  // 初始：展开 & 恢复带文案
   setCompact(false);
 
-  // 主题变化时，同步按钮文本
   const origApply = window.applyTheme;
   if (typeof origApply === 'function'){
     window.applyTheme = function(theme){
@@ -356,9 +319,7 @@ window.applyTheme = function applyTheme(theme){
   }
 })();
 
-/* =========================================================
- * Mobile drawer：手机上把侧边栏作为抽屉显示
- * =======================================================*/
+/* ========== Mobile 抽屉 ========== */
 (function mobileDrawer(){
   const mq = matchMedia('(max-width: 900px)');
   function setup(){
