@@ -195,7 +195,11 @@ function applyTheme(theme){
   const panel     = document.getElementById('controlsPanel');
   const btnInline = document.getElementById('controlsToggle');
 
-  // 右上角把手（始终在同一坐标，通过 body 类切换透明度与可点性）
+  // 去重历史残留把手，确保只有 1 个
+  const all = Array.from(document.querySelectorAll('#controlsHandle'));
+  all.slice(1).forEach(n=>n.remove());
+
+  // 右上角把手（固定坐标；展开态通过 body 类隐藏到 opacity:0）
   let handle = document.getElementById('controlsHandle');
   if(!handle){
     handle = document.createElement('button');
@@ -205,11 +209,11 @@ function applyTheme(theme){
     document.body.appendChild(handle);
   }
 
-  // 记录一次“展开时的真实高度”，正文永远按这个高度让位（折叠也不改）
+  // 记录“展开时”的真实高度，正文始终按此让位（不随折叠改变）
   let measured = 64;
   function measure(){
     if(!panel) return;
-    const h = Math.round(panel.getBoundingClientRect().height + 12); // +12 安全边距
+    const h = Math.round(panel.getBoundingClientRect().height + 12);
     measured = h;
     document.documentElement.style.setProperty('--controls-h', measured + 'px');
   }
@@ -218,29 +222,25 @@ function applyTheme(theme){
     if(!wrap) return;
     wrap.classList.toggle('is-collapsed', !!collapsed);
 
-    // 同步 body 类：控制把手透明度与可点性（位置不变）
+    // 同步 body 类：控制右把手显隐（位置不变）
     document.body.classList.toggle('controls-collapsed', !!collapsed);
 
-    // 行内按钮：展开显示“⟩”，折叠显示“⟨”
+    // 行内按钮 ↔ 把手箭头
     if(btnInline) btnInline.textContent = collapsed ? '⟨' : '⟩';
-
-    // 把手仅切换箭头
     handle.textContent = collapsed ? '⟩' : '⟨';
 
-    // 正文占位始终使用 measured（展开高度），不随折叠改变
+    // 占位不变
     document.documentElement.style.setProperty('--controls-h', measured + 'px');
   }
 
-  // 事件
   if(btnInline){
     btnInline.addEventListener('click', ()=>{
-      const wantCollapse = !wrap.classList.contains('is-collapsed');
-      setCollapsed(wantCollapse);
+      setCollapsed(!wrap.classList.contains('is-collapsed'));
     });
   }
   handle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始：展开并多次测高（兼容字体回流）
+  // 初始：展开并多次测高
   setCollapsed(false);
   const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); };
   window.addEventListener('resize', remeasure, {passive:true});
@@ -249,8 +249,12 @@ function applyTheme(theme){
   window.addEventListener('load', remeasure);
 })();
 
-/* ===== 左侧栏：固定把手，收起/展开侧栏（工具组左移对齐） ===== */
+/* ===== 左侧栏：固定把手（左上），收起/展开侧栏；工具组随之左移 ===== */
 (function setupSidebarHandle(){
+  // 去重历史残留把手
+  const all = Array.from(document.querySelectorAll('#sidebarHandle'));
+  all.slice(1).forEach(n=>n.remove());
+
   let sHandle = document.getElementById('sidebarHandle');
   if(!sHandle){
     sHandle = document.createElement('button');
@@ -270,3 +274,4 @@ function applyTheme(theme){
   document.body.classList.remove('sidebar-collapsed');
   sHandle.textContent = '⟨';
 })();
+
