@@ -125,25 +125,27 @@ th{background:var(--table-header)}
   opacity: 0; visibility: hidden;
 }
 
-/* —— 固定右上“工具组把手”：位置不变（仅切换透明度和可点击） —— */
+/* —— 固定右上“工具组把手”：展开时完全隐藏，收起时可点 —— */
 #controlsHandle{
   position:fixed; top:16px; right:24px; z-index:51;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
   padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
   cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
 }
-body:not(.controls-collapsed) #controlsHandle{ opacity:.15; pointer-events:none; }
-body.controls-collapsed      #controlsHandle{ opacity:.9;  pointer-events:auto; }
+/* 展开：完全透明&不可点（解决“虚影”）；收起：正常显示&可点 */
+body:not(.controls-collapsed) #controlsHandle{ opacity:0;  pointer-events:none; }
+body.controls-collapsed      #controlsHandle{ opacity:.9; pointer-events:auto; }
 #controlsHandle:hover{ filter:brightness(0.98) }
 
-/* —— 左侧栏把手 + 侧栏收起 —— */
+/* —— 左侧栏把手：默认可见 0.35，不至于“看不见”，收起时 0.9 —— */
 #sidebarHandle{
   position:fixed; top:16px; left:12px; z-index:52;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
   padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
   cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
 }
-body:not(.sidebar-collapsed) #sidebarHandle{ opacity:.15; pointer-events:none; }
+/* 展开：0.35（可见且可点）；收起：0.9（更醒目） */
+body:not(.sidebar-collapsed) #sidebarHandle{ opacity:.35; pointer-events:auto; }
 body.sidebar-collapsed       #sidebarHandle{ opacity:.9;  pointer-events:auto; }
 #sidebarHandle:hover{ filter:brightness(0.98) }
 
