@@ -11,43 +11,34 @@
     <!-- ========== Sidebar ========== -->
     <aside class="sidebar">
       <div class="brand">
-        <!-- DL 圆徽由 JS 运行时自动插入（.badge-dl） -->
         <h1>Data Lab</h1>
-
-        <!-- 主题切换（展开时带文案，紧凑时仅图标，由 JS 同步文本） -->
         <button id="themeToggle" class="theme-toggle btn ghost sm" type="button">🌙 深色</button>
-
-        <!-- 侧栏把手（与 Data Lab 同行垂直对齐，JS 若不存在会自动创建）
-             也可以保留为空，由 JS 注入；保守起见保留一个占位按钮 -->
+        <!-- 把手会被 JS 重新插到这里；保留占位无妨 -->
         <button id="sidebarPin" type="button">⟨</button>
       </div>
 
       <nav class="nav">
-        <!-- 首页 -->
         <div class="nav-item">
           <div class="nav-head" data-route="home">
             <div class="title"><span>首页</span></div>
           </div>
         </div>
 
-        <!-- 数据清洗 -->
         <div class="nav-item">
           <div class="nav-head" data-route="clean">
             <div class="title"><span>数据清洗</span></div>
           </div>
           <div class="submenu">
-            <!-- 如果你以后有更多清洗子功能，这里继续加 data-route -->
             <a href="#" data-route="clean">打开清洗工作台</a>
           </div>
         </div>
 
-        <!-- 数据分析（聚合 & 可视化：饼/折线/柱 在一个页面内选择） -->
         <div class="nav-item">
           <div class="nav-head" data-route="analyze">
             <div class="title"><span>数据分析</span></div>
           </div>
           <div class="submenu">
-            <!-- 这三个是独立模块：直方图/热力图/词云 -->
+            <!-- 这些是“独立模块”保留；数据分析（聚合）在一个页面里选择饼/折/柱 -->
             <a href="#" data-route="histogram">直方图（自动分箱）</a>
             <a href="#" data-route="heatmap">热力图</a>
             <a href="#" data-route="wordcloud">词云图</a>
@@ -63,11 +54,10 @@
 
     <!-- ========== Main ========== -->
     <main class="main">
-      <!-- 顶部工具组（固定悬浮，不遮挡点击；可收起为“把手”） -->
+      <!-- 顶部工具组 -->
       <div id="controlsWrap" class="controls-wrap">
         <div id="controlsPanel" class="controls">
           <div class="controls-row">
-            <!-- 数据源/适配器 -->
             <span class="chip">数据源</span>
             <select id="adapterSelect" class="sm">
               <option value="csv">CSV</option>
@@ -76,10 +66,7 @@
               <option value="json">JSON</option>
             </select>
 
-            <!-- 文件选择 -->
             <input id="fileInput" class="sm" type="file" />
-
-            <!-- 读取/预览 -->
             <button id="btnLoad"   class="btn sm" type="button">读取</button>
 
             <span class="chip">预览行数</span>
@@ -91,32 +78,24 @@
             </select>
             <button id="btnPreview" class="btn sm" type="button">预览</button>
 
-            <!-- 数据概览芯片 -->
             <span id="metaChip" class="badge">未加载</span>
-
-            <!-- 收起工具组的小按钮（把工具组“扇形”收起到右侧，把手固定右上角） -->
             <button id="controlsToggle" class="control-toggle tiny" type="button" title="隐藏工具组">⟩</button>
           </div>
         </div>
       </div>
 
-      <!-- 页面主视图容器（由 JS 路由渲染） -->
-      <div id="view">
-        <!-- 初始欢迎内容会由 app.js 注入 -->
-      </div>
+      <div id="view"></div>
     </main>
   </div>
 
-  <!-- ========== 第三方库：必须在 app.js 之前 ========== -->
-  <!-- Chart.js（为饼/折线/柱状图提供 window.Chart） -->
+  <!-- 第三方库 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- Plotly（热力图用） -->
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
-  <!-- wordcloud2（词云用） -->
   <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
 
-  <!-- ========== 入口脚本（ES Module） ========== -->
+  <!-- 主入口（ESM） -->
   <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
+
 
