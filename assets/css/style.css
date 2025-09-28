@@ -133,3 +133,40 @@ body.controls-collapsed .controls{
 /* 一点点微调：行内按钮和控件更紧凑，全部在一行不换行 */
 .controls-row{ white-space:nowrap; gap:8px; }
 .controls-row .sm{ padding:6px 8px; font-size:13px; }
+
+/* ==== 工具组不再遮挡正文：主内容根据面板真实高度 + 额外间距自动让位 ==== */
+:root{
+  --controls-h: 64px;         /* JS 会实时写入真实高度 */
+  --controls-gap: 28px;       /* 额外留白，防重叠；可调 20~36 */
+}
+
+/* 主内容顶部留白：面板高度 + 额外间距 */
+.main{ padding-top: calc(var(--controls-h) + var(--controls-gap)) !important; }
+
+/* 让第一块卡片再微微下沉一点（更“和谐”） */
+.main > .card:first-of-type{ margin-top: 4px; }
+
+/* —— 面板透明度（玻璃） —— 
+   如果你说的“透明度 80%”指更通透 = 80% 透明，即不透明度 0.2
+   我这里设置为 0.2；若你想要 80% 不透明（更实），把 0.2 改 0.8 即可。
+*/
+:root{
+  --glass: rgba(255,255,255,.20);   /* 浅色主题：20% 不透明 = 80% 透明 */
+}
+:root[data-theme="dark"]{
+  --glass: rgba(11,18,34,.20);      /* 深色主题：同样 0.2 不透明 */
+}
+
+/* 折叠逻辑：以 #controlsWrap 的状态为准 */
+#controlsWrap.is-collapsed .controls{
+  transform: translateX(calc(100% + 16px));
+  opacity: 0; visibility: hidden;
+}
+
+/* 右上角把手仅在折叠时显示 */
+#controlsHandle{ display:none; }
+#controlsWrap.is-collapsed ~ #controlsHandle{ display:block; }
+
+/* 行内控件更紧凑且不换行（全在一行） */
+.controls-row{ white-space: nowrap; gap: 8px; }
+.controls-row .sm{ padding: 6px 8px; font-size: 13px; }
