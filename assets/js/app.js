@@ -196,12 +196,10 @@ function applyTheme(theme){
   });
 })();
 
-/* ===== 悬浮面板：向右柔和隐藏（只留右上角把手），展开后悬浮于页面上 ===== */
-/* ===== 悬浮面板：测量高度 + 向右柔和隐藏（只留右上角把手） ===== */
+/* ===== 悬浮面板：精准测高 + 自动留白 + 向右柔和隐藏 ===== */
 (function setupControlsFloating(){
   const wrap   = document.getElementById('controlsWrap');
   const panel  = document.getElementById('controlsPanel');
-  const row    = document.querySelector('.controls-row');
   const btnInline = document.getElementById('controlsToggle');
 
   // 右上角固定把手（折叠时出现）
@@ -214,42 +212,38 @@ function applyTheme(theme){
     document.body.appendChild(fixedHandle);
   }
 
-  // 动态写入面板高度 -> 让 .main 顶部自动留白
+  // 精准测量面板高度（含内边距/边框），再加一点安全边距避免视觉覆盖
   function measure(){
-    const h = (panel?.getBoundingClientRect()?.height || 64);
-    document.documentElement.style.setProperty('--controls-h', Math.round(h) + 'px');
+    if(!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const safe = 12; // 额外安全空间，避免阴影或字体回流造成的轻微遮挡
+    const h = Math.round(rect.height + safe);
+    document.documentElement.style.setProperty('--controls-h', h + 'px');
   }
 
-  // 折叠/展开
   function setCollapsed(on){
     if(!wrap) return;
     wrap.classList.toggle('is-collapsed', !!on);
-    // 行内小按钮箭头
     if(btnInline) btnInline.textContent = on ? '⟩' : '⟨';
-    // 右上角把手箭头
     fixedHandle.textContent = on ? '⟨' : '⟩';
-    // 折叠后高度为 0，展开后按实际高度
-    if(on){
-      document.documentElement.style.setProperty('--controls-h', '0px');
-    }else{
-      measure();
-    }
+    // 折叠时不占位；展开时根据实际高度占位
+    document.documentElement.style.setProperty('--controls-h', on ? '0px' : (panel ? (Math.round(panel.getBoundingClientRect().height + 12) + 'px') : '64px'));
   }
 
-  // 事件绑定
+  // 行内按钮 & 固定把手
   if(btnInline){
     btnInline.addEventListener('click', ()=>{
-      const on = !wrap.classList.contains('is-collapsed');
-      setCollapsed(on);
+      setCollapsed(!wrap.classList.contains('is-collapsed'));
     });
   }
   fixedHandle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始：展开并测量
+  // 初始：展开并多次测量，确保字体/资源加载后的高度也覆盖到
   setCollapsed(false);
-  // 窗口变化时重测
-  window.addEventListener('resize', ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); }, {passive:true});
-  // 首次渲染后再测一次，避免字体加载造成高度变化
-  setTimeout(()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); }, 0);
+  const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); };
+  window.addEventListener('resize', remeasure, {passive:true});
+  // 等待布局稳定后再测几次
+  setTimeout(remeasure, 0);
+  setTimeout(remeasure, 120);
+  window.addEventListener('load', remeasure);
 })();
-
