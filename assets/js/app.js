@@ -1,4 +1,4 @@
-// ========== app.js (覆盖版) ==========
+// ========== app.js (全覆盖版) ==========
 
 import { DataStore, Modules, loadFile } from './core.js';
 
@@ -63,7 +63,7 @@ $$('[data-route]').forEach(el=>{
   });
 });
 
-/* ===== 悬浮工具面板：事件 ===== */
+/* ===== 悬浮工具面板：读取/预览/事件 ===== */
 const btnLoad      = $('#btnLoad');
 const btnPreview   = $('#btnPreview');
 const previewRowsI = $('#previewRows');
@@ -189,48 +189,48 @@ function applyTheme(theme){
   });
 })();
 
-/* ===== 悬浮面板：精准测高 + 自动让位 + 向右柔和隐藏（把手可用） ===== */
+/* ===== 悬浮面板：精准测高 + 始终占位 + 扇形缓收 ===== */
 (function setupControlsFloating(){
   const wrap      = document.getElementById('controlsWrap');
   const panel     = document.getElementById('controlsPanel');
   const btnInline = document.getElementById('controlsToggle');
 
-  // 建立右上角把手（折叠时显示）
+  // 右上角把手（仅折叠时显示）
   let handle = document.getElementById('controlsHandle');
   if(!handle){
     handle = document.createElement('button');
     handle.id = 'controlsHandle';
     handle.type = 'button';
-    handle.textContent = '⟨';     // 展开时显示左箭头；折叠后改为右箭头
-    handle.style.display = 'none'; // 默认展开：隐藏把手
+    handle.textContent = '⟩';
+    handle.style.display = 'none';     // 展开时隐藏
     document.body.appendChild(handle);
   }
 
-  function measureAndSetPadding(){
+  // 记录一次“展开时的真实高度”，正文永远按这个高度让位（折叠也不改）
+  let measured = 64;
+  function measure(){
     if(!panel) return;
     const h = Math.round(panel.getBoundingClientRect().height + 12); // +12 安全边距
-    document.documentElement.style.setProperty('--controls-h', h + 'px');
+    measured = h;
+    document.documentElement.style.setProperty('--controls-h', measured + 'px');
   }
 
   function setCollapsed(collapsed){
     if(!wrap) return;
     wrap.classList.toggle('is-collapsed', !!collapsed);
 
-    // 行内按钮：展开显示“⟩”（点它收起），折叠显示“⟨”（点它展开）
+    // 行内按钮：展开显示“⟩”（可收起），折叠显示“⟨”（可展开）
     if(btnInline) btnInline.textContent = collapsed ? '⟨' : '⟩';
 
-    // 右上角把手：折叠时显示，展开时隐藏；箭头与行内相反
+    // 右上角把手：折叠时显示（向右箭头），展开时隐藏
     handle.style.display = collapsed ? 'block' : 'none';
     handle.textContent   = collapsed ? '⟩' : '⟨';
 
-    // 主内容占位：折叠为 0，展开为面板真实高度
-    document.documentElement.style.setProperty(
-      '--controls-h',
-      collapsed ? '0px' : (panel ? (Math.round(panel.getBoundingClientRect().height + 12) + 'px') : '64px')
-    );
+    // 正文占位始终使用 measured（展开高度），不随折叠改变
+    document.documentElement.style.setProperty('--controls-h', measured + 'px');
   }
 
-  // 事件绑定
+  // 事件
   if(btnInline){
     btnInline.addEventListener('click', ()=>{
       const wantCollapse = !wrap.classList.contains('is-collapsed');
@@ -239,9 +239,9 @@ function applyTheme(theme){
   }
   handle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始：展开并多次测量（字体/资源加载后也能覆盖）
+  // 初始：展开并多次测高（兼容字体回流）
   setCollapsed(false);
-  const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measureAndSetPadding(); };
+  const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); };
   window.addEventListener('resize', remeasure, {passive:true});
   setTimeout(remeasure, 0);
   setTimeout(remeasure, 150);
