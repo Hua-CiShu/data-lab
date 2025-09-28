@@ -33,12 +33,10 @@ function buildUI(){
   const xCol      = sel('xCol', ['（选择…）', ...headers]);
   const yCol      = sel('yCol', ['（选择…）', ...headers]);
 
-  const aggOp     = sel('aggOp', ['count','sum','avg']);          // 饼图/折线都用
-  const sortX     = sel('sortX', ['auto','label-asc','value-desc']); // 饼图：分类排序；折线忽略（按时间）
+  const aggOp     = sel('aggOp', ['count','sum','avg']);              // 饼图/折线
+  const sortX     = sel('sortX', ['auto','label-asc','value-desc']);  // 饼图
   const topN      = sel('topN', ['no-limit','top-5','top-8','top-10']);
-
-  const dateGran  = sel('dateGran', ['day','week','month']);      // 折线
-  const dateFmtHint = el('input', { id:'dateHint', class:'sm', placeholder:'可选：日期格式提示（留空=自动）' });
+  const dateGran  = sel('dateGran', ['day','week','month']);          // 折线
 
   const btn = el('button', { class:'btn sm', id:'btnRender' }, '生成图表');
 
@@ -49,7 +47,6 @@ function buildUI(){
     el('span', { class:'chip' }, '聚合'), aggOp,
     el('span', { class:'chip' }, '排序/TopN（饼图）'), sortX, topN,
     el('span', { class:'chip' }, '时间粒度（折线）'), dateGran,
-    dateFmtHint,
     btn
   );
 
@@ -64,39 +61,32 @@ function buildUI(){
   );
 }
 
-function inferDate(str, hint){
-  // hint 仅作为未来扩展；当前走自动多格式
-  return Agg.parseDate(str);
-}
-
 function renderPie(cfg){
   const { xCol, yCol, op, sort, top, rows } = cfg;
 
-  // 1) 归一化分类（大小写/空格不敏感），并建立映射用于美观展示
+  // 1) 归一化分类并建立“漂亮标签”映射
   const mapKeyToPretty = new Map();
   const gmap = Agg.groupBy(rows, r => {
     const raw = r[xCol];
     const key = Agg.normCat(raw);
     if (!mapKeyToPretty.has(key)){
-      // 保留首次出现的“原始样式”（例如 Web / WEB / web → 以第一个为准）
       mapKeyToPretty.set(key, Agg.trim(raw==null?'':String(raw)));
     }
     return key;
   });
 
   // 2) 聚合（count/sum/avg）
-  const sumArr = Agg.summarize(gmap, r => r[yCol], op);
+  const sumArr = Agg.summarize(gmap, r => yCol ? r[yCol] : 1, op);
 
   // 3) 排序 & TopN
   let arr = sumArr;
   if (sort === 'label-asc') arr = Agg.sortByKeyAsc(arr);
   else if (sort === 'value-desc') arr = Agg.sortByValueDesc(arr);
-  else arr = Agg.sortByValueDesc(arr); // auto：按值降序更容易读
+  else arr = Agg.sortByValueDesc(arr); // auto
 
   const n = top === 'top-5' ? 5 : top === 'top-8' ? 8 : top === 'top-10' ? 10 : Infinity;
   if (Number.isFinite(n)) arr = Agg.topNWithOther(arr, n);
 
-  // 4) 输出 labels/data
   const labels = arr.map(d => mapKeyToPretty.get(d.key) || d.key || '(空)');
   const data   = arr.map(d => d.value);
 
@@ -111,7 +101,7 @@ function renderLine(cfg){
   // 1) 解析日期并落桶（日/周/月）
   const valid = [];
   for (const r of rows){
-    const d = inferDate(r[xCol]);
+    const d = Agg.parseDate(r[xCol]);
     if (d) valid.push({ d: Agg.floorToBucket(d, gran), row: r });
   }
   if (valid.length === 0) throw new Error('未能解析任何日期，请检查 X 列是否为日期。');
@@ -127,7 +117,6 @@ function renderLine(cfg){
 
   const labels = sumArr.map(d => {
     const dt = new Date(Number(d.key));
-    // 简洁日期格式：月/日 或 年-月
     if (gran === 'month') return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
     return `${dt.getMonth()+1}/${dt.getDate()}`;
   });
@@ -140,12 +129,14 @@ function renderLine(cfg){
 
 let _chart; // Chart.js 实例
 function drawChart(type, labels, datasets, extraOpts={}){
-  const ctx = document.getElementById('analyzeChart').getContext('2d');
+  const canvas = document.getElementById('analyzeChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
 
-  // 主题自适配
   const isDark = (document.documentElement.getAttribute('data-theme') === 'dark');
 
   if (_chart) _chart.destroy();
+  // eslint-disable-next-line no-undef
   _chart = new Chart(ctx, {
     type,
     data: { labels, datasets: datasets.map(ds => ({
@@ -185,12 +176,10 @@ function analyzeModule(){
     return;
   }
 
-  // —— 渲染 UI —— //
   const view = document.getElementById('view');
   view.innerHTML = '';
   view.appendChild(buildUI());
 
-  // —— 绑定 —— //
   const meta = document.getElementById('analyzeMeta');
   const btn  = document.getElementById('btnRender');
 
@@ -202,16 +191,13 @@ function analyzeModule(){
     const sortX     = document.getElementById('sortX').value;           // pie only
     const topN      = document.getElementById('topN').value;            // pie only
     const dateGran  = document.getElementById('dateGran').value;        // line only
-    // const hint      = document.getElementById('dateHint').value;      // 预留
 
-    // 过滤掉空行
     const rows = DataStore.rows.filter(r => r != null);
 
     try{
       let info;
       if (chartType === 'pie'){
         if (xCol === '（选择…）') throw new Error('请选择 X 列（分类）。');
-        // yCol 可选：为空时按 count
         info = renderPie({
           xCol,
           yCol: yCol==='（选择…）' ? null : yCol,
@@ -221,13 +207,10 @@ function analyzeModule(){
           rows
         });
         meta.textContent = `已分组 ${info.groups} 类。`;
-
-      }else{ // line
+      }else{
         if (xCol === '（选择…）' || yCol === '（选择…）')
           throw new Error('折线图需要 X=日期列、Y=数值列。');
-        info = renderLine({
-          xCol, yCol, op: aggOp, gran: dateGran, rows
-        });
+        info = renderLine({ xCol, yCol, op: aggOp, gran: dateGran, rows });
         meta.textContent = `点数 ${info.points}，范围 [${info.min.toFixed(2)} ~ ${info.max.toFixed(2)}]。`;
       }
     }catch(err){
@@ -236,5 +219,5 @@ function analyzeModule(){
   });
 }
 
-// 注册模块：侧边栏 “数据分析” 点击会运行此模块
 Modules.set('analyze', analyzeModule);
+
