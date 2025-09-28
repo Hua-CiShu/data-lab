@@ -1,7 +1,7 @@
 /* ===== Notion-like minimal + light/dark ===== */
 :root{
   --sidebar:260px;
-  --sidebar-compact:130px;          /* 压缩后 50% 宽度 */
+  --sidebar-compact:150px;          /* 压缩后 50% 宽度 */
   --radius:6px;
 
   /* 工具组占位：由 JS 写入“展开时真实高度” */
@@ -50,16 +50,22 @@ body.sidebar-compact .app{
 .brand h1{ margin:0; font-size:18px; font-weight:700; letter-spacing:.2px; white-space:nowrap }
 .theme-toggle.tiny{ padding:6px 10px; font-size:12px }
 
-/* 圆形 D 徽章（紧凑时显示） */
-.brand .badge-D{
+/* 圆形 DL 徽章（仅紧凑时显示） */
+.brand .badge-dl{
   width:34px; height:34px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
   font-weight:800; letter-spacing:.5px;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
 }
-body.sidebar-compact .brand h1{ display:none }            /* 紧凑时隐藏 “Data Lab” 文本 */
-body.sidebar-compact .brand .badge-D{ display:flex }
-body:not(.sidebar-compact) .brand .badge-D{ display:none }/* 展开时隐藏徽章 */
+
+/* 紧凑：隐藏“Data Lab”文字，只显示 DL 徽章 + tiny 主题按钮 */
+body.sidebar-compact .brand h1{ display:none }
+body.sidebar-compact .brand .badge-dl{ display:flex }
+body.sidebar-compact .theme-toggle{ padding:6px; width:34px; height:34px; border-radius:50%; font-size:14px }
+
+/* 展开：显示“Data Lab”文字，隐藏 DL 徽章，主题按钮用常规样式 */
+body:not(.sidebar-compact) .brand .badge-dl{ display:none }
+body:not(.sidebar-compact) .theme-toggle{ padding:6px 10px; font-size:12px; width:auto; height:auto }
 
 /* 侧栏内部右上角把手（不探出） */
 #sidebarPin{
