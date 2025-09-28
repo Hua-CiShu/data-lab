@@ -10,6 +10,7 @@ import './adapters/json.js';
 
 // 模块
 import './modules/clean.js';
+import './lib/agg.js';
 import './modules/analyze.js';
 import './modules/histogram.js';
 import './modules/heatmap.js';
