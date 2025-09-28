@@ -2,101 +2,99 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Data Lab · 本地数据清洗 & 分析</title>
-  <link rel="stylesheet" href="./assets/css/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Lab</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
   <div class="app">
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <h1>Data Lab</h1>
-        <button class="btn secondary theme-toggle tiny" id="themeToggle" aria-label="切换主题">🌙 深色</button>
+        <button id="themeToggle" class="theme-toggle btn ghost sm" type="button">🌙 深色</button>
+        <button id="sidebarPin" type="button">⟨</button>
       </div>
 
       <nav class="nav">
         <div class="nav-item">
-          <div class="nav-head" data-route="home">
-            <div class="title"><span>首页</span></div><span class="chev">▸</span>
-          </div>
-          <div class="submenu">
-            <a href="#home" data-route="home">欢迎</a>
-          </div>
+          <div class="nav-head" data-route="home"><div class="title"><span>首页</span></div></div>
         </div>
+      <!-- 数据清洗 -->
+<div class="nav-item">
+  <div class="nav-head" data-route="clean"><div class="title"><span>数据清洗</span></div></div>
+  <div class="submenu">
+    <a href="#" data-route="drop-empty">空行删除</a>
+    <a href="#" data-route="trim">首尾空白清理</a>
+    <a href="#" data-route="dedupe">重复行去重</a>
+    <a href="#" data-route="fill-missing">缺失值填充</a>
+    <a href="#" data-route="drop-cols">删除列</a>
+    <a href="#" data-route="type-cast">类型转换</a>
+  </div>
+</div>
 
-        <div class="nav-item">
-          <div class="nav-head" data-route="clean">
-            <div class="title"><span>数据清洗</span></div><span class="chev">▸</span>
-          </div>
-          <div class="submenu">
-            <a data-route="clean/remove-empty">删除空行</a>
-            <a data-route="clean/dedupe">按列去重</a>
-            <a data-route="clean/export">导出 CSV</a>
-          </div>
-        </div>
+<!-- 数据分析 -->
+<div class="nav-item">
+  <div class="nav-head" data-route="analyze"><div class="title"><span>数据分析</span></div></div>
+  <div class="submenu">
+    <a href="#" data-route="bar">柱状图</a>
+    <a href="#" data-route="line">折线图</a>
+    <a href="#" data-route="box">箱线图</a>
+    <a href="#" data-route="pie">饼图</a>
+    <a href="#" data-route="histogram">直方图（自动分箱）</a>
+    <a href="#" data-route="heatmap">热力图</a>
+    <a href="#" data-route="wordcloud">词云图</a>
+  </div>
+</div>
 
-        <div class="nav-item">
-          <div class="nav-head" data-route="analyze">
-            <div class="title"><span>数据分析</span></div><span class="chev">▸</span>
-          </div>
-          <div class="submenu">
-            <a data-route="analyze/line">折线图</a>
-            <a data-route="analyze/bar">柱状/直方图</a>
-            <a data-route="analyze/hist">直方图（自动分箱）</a>
-            <a data-route="analyze/pie">饼图</a>
-            <a data-route="analyze/heatmap">热力图</a>
-            <a data-route="analyze/wordcloud">词云</a>
-          </div>
+        <div class="nav-footer">
+          <button id="btnTests" class="btn small" type="button">运行自检</button>
+          <div id="tests" class="muted" style="margin-top:6px;"></div>
         </div>
       </nav>
-
-      <div class="nav-footer">
-        <button class="btn ghost small" id="btnTests" title="运行自检">运行自检</button>
-      </div>
     </aside>
 
+    <!-- Main -->
     <main class="main">
-      <!-- 悬浮工具面板（始终置顶） -->
-      <div class="controls-wrap" id="controlsWrap" aria-label="工具面板悬浮容器">
-        <section class="controls" id="controlsPanel" aria-label="工具面板">
+      <!-- 顶部工具组（95% 玻璃、固定、可“扇形”柔和收起） -->
+      <div id="controlsWrap" class="controls-wrap">
+        <div id="controlsPanel" class="controls">
           <div class="controls-row">
-            <span class="badge">数据源</span>
+            <span class="chip">数据源</span>
             <select id="adapterSelect" class="sm">
-              <option value="csv">CSV / 文本</option>
-              <option value="excel">Excel (.xlsx)</option>
-              <option value="sqlite">SQLite (.db)</option>
+              <option value="csv">CSV</option>
+              <option value="excel">Excel（.xlsx）</option>
+              <option value="sqlite">SQLite（.db）</option>
               <option value="json">JSON</option>
             </select>
-            <input id="fileInput" type="file" class="sm" />
-            <label class="inline">
-              预览行数
-              <input id="previewRows" type="number" min="1" max="200" value="10" class="sm w-72"/>
-            </label>
-            <button class="btn sm" id="btnLoad">读取</button>
-            <button class="btn secondary sm" id="btnPreview">预览</button>
-            <span class="chip sm" id="metaChip">未加载</span>
-            <!-- 行内收起按钮 -->
-            <button class="control-toggle tiny" id="controlsToggle" aria-label="隐藏/展开工具面板" title="隐藏/展开">⟩</button>
+
+            <input id="fileInput" class="sm" type="file" />
+            <button id="btnLoad" class="btn sm" type="button">读取</button>
+
+            <span class="chip">预览行数</span>
+            <select id="previewRows" class="sm">
+              <option>5</option><option selected>10</option><option>20</option><option>50</option>
+            </select>
+            <button id="btnPreview" class="btn sm" type="button">预览</button>
+
+            <span id="metaChip" class="badge">未加载</span>
+
+            <!-- 收起工具组按钮（右上把手固定，不改变位置） -->
+            <button id="controlsToggle" class="control-toggle tiny" type="button" title="隐藏工具组">⟩</button>
           </div>
-        </section>
+        </div>
       </div>
 
-      <section class="card">
-        <div id="preview" class="grid"></div>
-        <div id="tests" class="muted" style="margin-top:8px"></div>
-      </section>
-
-      <div class="sep"></div>
-
-      <section id="view" class="card">
-        <h2 class="h">欢迎</h2>
-        <p class="muted">从左侧选择模块；把鼠标移到“数据清洗/数据分析”可展开小模块。</p>
-        <p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>
-        <p>扩展：适配器放 <span class="kbd">assets/js/adapters/</span>，模块放 <span class="kbd">assets/js/modules/</span>。</p>
-      </section>
+      <div id="view"></div>
     </main>
   </div>
 
-  <script type="module" src="./assets/js/app.js"></script>
+  <!-- 第三方库：在 app.js 之前 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+
+  <!-- 入口（ESM） -->
+  <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

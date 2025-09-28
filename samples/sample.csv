@@ -1,5 +1,11 @@
-name,amount,note
-Alice,12,"hello, world"
-Bob,9,"line
-break"
-Carol,7,"He said ""OK"""
+date,channel,rating,amount,category,item
+2025-09-20,web,4.2,120,books,A
+2025-09-20,store,3.8,80,books,B
+2025-09-21,web,4.6,150,electronics,C
+2025-09-21,mobile,4.1,90,electronics,D
+2025-09-22,web,4.9,200,home,E
+2025-09-22,store,3.6,60,home,F
+2025-09-23,mobile,4.3,110,books,G
+2025-09-23,web,4.0,70,home,H
+2025-09-24,store,3.9,95,electronics,I
+2025-09-24,mobile,4.2,130,books,J

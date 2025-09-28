@@ -1,20 +1,65 @@
-export const DataStore = { headers:[], rows:[], set(d){ this.headers=d.headers||[]; this.rows=d.rows||[]; } };
-export const Adapters  = new Map();
-export const Modules   = new Map();
-export function registerAdapter(name, fn){ Adapters.set(name, fn); }
-export function registerModule(route, fn){ Modules.set(route, fn); }
+// core.js — 统一状态 & 适配器注册 & 加载
+// 使用方式：import { DataStore, Modules, loadFile, registerAdapter, Adapters } from './core.js';
 
-export async function loadFile(adapterName, file){
-  const ad = Adapters.get(adapterName);
-  if(!ad) throw new Error('未知数据源: '+adapterName);
-  const { headers, rows } = await ad(file);
-  DataStore.set({ headers, rows });
+export const DataStore = {
+  headers: [],
+  rows: [],
+  fileInfo: { name: '', size: 0, type: '' },
+};
+
+export const Modules = new Map(); // Modules.set('route', fn)
+
+const _adapters = new Map(); // 'csv' -> handler(File|Blob) => {headers, rows}
+
+export function registerAdapter(name, handler){
+  const key = String(name || '').toLowerCase();
+  if (!key) throw new Error('registerAdapter(name, handler): name 不能为空');
+  if (typeof handler !== 'function') throw new Error(`适配器 ${key} 的 handler 必须是函数`);
+  _adapters.set(key, handler);
 }
 
-export function exportCSV(rows=DataStore.rows, headers=DataStore.headers){
-  const NEED_QUOTE = /[",\n]/;               // 修复：正则单行，避免“missing /”
-  const cell = v => { if(v==null) return ''; const s = String(v).replace(/"/g,'""'); return NEED_QUOTE.test(s) ? `"${s}"` : s; };
-  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => cell(r[h])).join(','))).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='export.csv'; a.click(); URL.revokeObjectURL(a.href);
+export const Adapters = {
+  set(name, handler){ registerAdapter(name, handler); },
+  get(name){ return _adapters.get(String(name || '').toLowerCase()); },
+  has(name){ return _adapters.has(String(name || '').toLowerCase()); },
+  list(){ return Array.from(_adapters.keys()); },
+};
+
+export function resetData(){
+  DataStore.headers = [];
+  DataStore.rows = [];
+  DataStore.fileInfo = { name:'', size:0, type:'' };
 }
+
+/**
+ * 加载文件：调用对应适配器，并写入 DataStore
+ * @param {string} type  如 'csv' | 'excel' | 'sqlite' | 'json'
+ * @param {File|Blob} fileOrBlob
+ */
+export async function loadFile(type, fileOrBlob){
+  const key = String(type || '').toLowerCase();
+  if (!_adapters.has(key)){
+    const reg = Adapters.list();
+    throw new Error(`未找到适配器：${key}。已注册：${reg.length ? reg.join(', ') : '（空）'}`);
+  }
+  if (!fileOrBlob) throw new Error('没有选择文件。');
+
+  const handler = _adapters.get(key);
+  const result = await handler(fileOrBlob);
+
+  if (!result || !Array.isArray(result.headers) || !Array.isArray(result.rows)){
+    throw new Error(`适配器 ${key} 返回格式不正确，应为 { headers:[], rows:[] }`);
+  }
+
+  DataStore.headers = result.headers;
+  DataStore.rows = result.rows;
+  DataStore.fileInfo = {
+    name: fileOrBlob.name || '(blob)',
+    size: fileOrBlob.size || 0,
+    type: fileOrBlob.type || '',
+  };
+
+  return { headers: DataStore.headers, rows: DataStore.rows };
+}
+
+
