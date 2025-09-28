@@ -8,42 +8,44 @@
 </head>
 <body>
   <div class="app">
-    <!-- ========== Sidebar ========== -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <h1>Data Lab</h1>
         <button id="themeToggle" class="theme-toggle btn ghost sm" type="button">🌙 深色</button>
-        <!-- 把手会被 JS 重新插到这里；保留占位无妨 -->
         <button id="sidebarPin" type="button">⟨</button>
       </div>
 
       <nav class="nav">
         <div class="nav-item">
-          <div class="nav-head" data-route="home">
-            <div class="title"><span>首页</span></div>
-          </div>
+          <div class="nav-head" data-route="home"><div class="title"><span>首页</span></div></div>
         </div>
+      <!-- 数据清洗 -->
+<div class="nav-item">
+  <div class="nav-head" data-route="clean"><div class="title"><span>数据清洗</span></div></div>
+  <div class="submenu">
+    <a href="#" data-route="drop-empty">空行删除</a>
+    <a href="#" data-route="trim">首尾空白清理</a>
+    <a href="#" data-route="dedupe">重复行去重</a>
+    <a href="#" data-route="fill-missing">缺失值填充</a>
+    <a href="#" data-route="drop-cols">删除列</a>
+    <a href="#" data-route="type-cast">类型转换</a>
+  </div>
+</div>
 
-        <div class="nav-item">
-          <div class="nav-head" data-route="clean">
-            <div class="title"><span>数据清洗</span></div>
-          </div>
-          <div class="submenu">
-            <a href="#" data-route="clean">打开清洗工作台</a>
-          </div>
-        </div>
-
-        <div class="nav-item">
-          <div class="nav-head" data-route="analyze">
-            <div class="title"><span>数据分析</span></div>
-          </div>
-          <div class="submenu">
-            <!-- 这些是“独立模块”保留；数据分析（聚合）在一个页面里选择饼/折/柱 -->
-            <a href="#" data-route="histogram">直方图（自动分箱）</a>
-            <a href="#" data-route="heatmap">热力图</a>
-            <a href="#" data-route="wordcloud">词云图</a>
-          </div>
-        </div>
+<!-- 数据分析 -->
+<div class="nav-item">
+  <div class="nav-head" data-route="analyze"><div class="title"><span>数据分析</span></div></div>
+  <div class="submenu">
+    <a href="#" data-route="bar">柱状图</a>
+    <a href="#" data-route="line">折线图</a>
+    <a href="#" data-route="box">箱线图</a>
+    <a href="#" data-route="pie">饼图</a>
+    <a href="#" data-route="histogram">直方图（自动分箱）</a>
+    <a href="#" data-route="heatmap">热力图</a>
+    <a href="#" data-route="wordcloud">词云图</a>
+  </div>
+</div>
 
         <div class="nav-footer">
           <button id="btnTests" class="btn small" type="button">运行自检</button>
@@ -52,9 +54,9 @@
       </nav>
     </aside>
 
-    <!-- ========== Main ========== -->
+    <!-- Main -->
     <main class="main">
-      <!-- 顶部工具组 -->
+      <!-- 顶部工具组（95% 玻璃、固定、可“扇形”柔和收起） -->
       <div id="controlsWrap" class="controls-wrap">
         <div id="controlsPanel" class="controls">
           <div class="controls-row">
@@ -67,18 +69,17 @@
             </select>
 
             <input id="fileInput" class="sm" type="file" />
-            <button id="btnLoad"   class="btn sm" type="button">读取</button>
+            <button id="btnLoad" class="btn sm" type="button">读取</button>
 
             <span class="chip">预览行数</span>
             <select id="previewRows" class="sm">
-              <option>5</option>
-              <option selected>10</option>
-              <option>20</option>
-              <option>50</option>
+              <option>5</option><option selected>10</option><option>20</option><option>50</option>
             </select>
             <button id="btnPreview" class="btn sm" type="button">预览</button>
 
             <span id="metaChip" class="badge">未加载</span>
+
+            <!-- 收起工具组按钮（右上把手固定，不改变位置） -->
             <button id="controlsToggle" class="control-toggle tiny" type="button" title="隐藏工具组">⟩</button>
           </div>
         </div>
@@ -88,14 +89,12 @@
     </main>
   </div>
 
-  <!-- 第三方库 -->
+  <!-- 第三方库：在 app.js 之前 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
 
-  <!-- 主入口（ESM） -->
+  <!-- 入口（ESM） -->
   <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
-
-
