@@ -21,22 +21,20 @@ export const Agg = {
     if (v == null) return null;
     if (v instanceof Date && !isNaN(v)) return v;
     const s = String(v).trim();
-    // 常见格式：ISO、YYYY-MM-DD、YYYY/MM/DD、MM/DD/YYYY、DD/MM/YYYY
+    // ISO / YYYY-MM-DD / YYYY/MM/DD / MM/DD/YYYY / DD/MM/YYYY
     let d = new Date(s);
     if (!isNaN(d)) return d;
-    // 2025-09-26
+
     let m = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
     if (m){
       const dt = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
       if (!isNaN(dt)) return dt;
     }
-    // 26/09/2025 或 09/26/2025：尝试两种
     m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
     if (m){
-      // 先按本地常见：YYYY/MM/DD 已覆盖；此处尝试 MDY 再 DMY
-      let dt = new Date(Number(m[3]), Number(m[1])-1, Number(m[2]));
+      let dt = new Date(Number(m[3]), Number(m[1])-1, Number(m[2])); // MDY
       if (!isNaN(dt)) return dt;
-      dt = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+      dt = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));     // DMY
       if (!isNaN(dt)) return dt;
     }
     return null;
@@ -48,8 +46,7 @@ export const Agg = {
     for (const r of rows){
       const k = keyFn(r);
       const bucket = map.get(k);
-      if (bucket) bucket.push(r);
-      else map.set(k, [r]);
+      if (bucket) bucket.push(r); else map.set(k, [r]);
     }
     return map;
   },
@@ -58,13 +55,13 @@ export const Agg = {
     const out = [];
     for (const [k, arr] of map){
       if (op === 'count'){
-        out.push({ key: k, value: arr.length });
+        out.push({ key:k, value:arr.length });
       }else{
         const nums = arr.map(valFn).map(Agg.toNumber).filter(n => Number.isFinite(n));
         const sum = nums.reduce((a,b)=>a+b, 0);
-        if (op === 'sum') out.push({ key: k, value: sum });
-        else if (op === 'avg') out.push({ key: k, value: nums.length ? sum/nums.length : 0 });
-        else out.push({ key: k, value: arr.length });
+        if (op === 'sum') out.push({ key:k, value:sum });
+        else if (op === 'avg') out.push({ key:k, value: nums.length ? sum/nums.length : 0 });
+        else out.push({ key:k, value:arr.length });
       }
     }
     return out;
