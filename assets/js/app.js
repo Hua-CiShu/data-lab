@@ -24,7 +24,6 @@ export function escapeHTML(s){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[m]));
 }
-
 function renderMeta(){
   const chip = $('#metaChip');
   if (!chip) return;
@@ -32,27 +31,21 @@ function renderMeta(){
     ? `列 ${DataStore.headers.length} · 行 ${DataStore.rows.length}`
     : '未加载';
 }
-
 function selectedRowLimit(){
   return Math.max(1, Math.min(200, Number($('#previewRows')?.value||10)));
 }
-
-export function renderTablePreview(rows = DataStore.rows, limit=null){
+export function renderTablePreview(rows = DataStore.rows){
   const el = $('#preview'); if(!el) return;
   if(!rows.length){ el.innerHTML = '<p class="muted">暂无数据预览。</p>'; return; }
-
   const headers = DataStore.headers;
   const rowLimit = selectedRowLimit();
   const top = rows.slice(0, rowLimit);
-
   const thead = '<tr>' + headers.map(h=>`<th>${escapeHTML(h)}</th>`).join('') + '</tr>';
   const tbody = top.map(r => '<tr>' + headers.map(h=>`<td>${escapeHTML(r[h] ?? '')}</td>`).join('') + '</tr>').join('');
-
   el.innerHTML = `<div class="h">数据预览（前 ${rowLimit} 行）</div>
                   <div class="grid"><div class="card" style="overflow:auto">
                   <table>${thead}${tbody}</table></div></div>`;
 }
-
 function ensureData(){
   if(!DataStore.rows.length){ alert('请先读取数据文件'); throw new Error('no data'); }
 }
@@ -196,54 +189,61 @@ function applyTheme(theme){
   });
 })();
 
-/* ===== 悬浮面板：精准测高 + 自动留白 + 向右柔和隐藏 ===== */
+/* ===== 悬浮面板：精准测高 + 自动让位 + 向右柔和隐藏（把手可用） ===== */
 (function setupControlsFloating(){
-  const wrap   = document.getElementById('controlsWrap');
-  const panel  = document.getElementById('controlsPanel');
+  const wrap      = document.getElementById('controlsWrap');
+  const panel     = document.getElementById('controlsPanel');
   const btnInline = document.getElementById('controlsToggle');
 
-  // 右上角固定把手（折叠时出现）
-  let fixedHandle = document.getElementById('controlsHandle');
-  if(!fixedHandle){
-    fixedHandle = document.createElement('button');
-    fixedHandle.id = 'controlsHandle';
-    fixedHandle.type = 'button';
-    fixedHandle.textContent = '⟩';
-    document.body.appendChild(fixedHandle);
+  // 建立右上角把手（折叠时显示）
+  let handle = document.getElementById('controlsHandle');
+  if(!handle){
+    handle = document.createElement('button');
+    handle.id = 'controlsHandle';
+    handle.type = 'button';
+    handle.textContent = '⟨';     // 展开时显示左箭头；折叠后改为右箭头
+    handle.style.display = 'none'; // 默认展开：隐藏把手
+    document.body.appendChild(handle);
   }
 
-  // 精准测量面板高度（含内边距/边框），再加一点安全边距避免视觉覆盖
-  function measure(){
+  function measureAndSetPadding(){
     if(!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const safe = 12; // 额外安全空间，避免阴影或字体回流造成的轻微遮挡
-    const h = Math.round(rect.height + safe);
+    const h = Math.round(panel.getBoundingClientRect().height + 12); // +12 安全边距
     document.documentElement.style.setProperty('--controls-h', h + 'px');
   }
 
-  function setCollapsed(on){
+  function setCollapsed(collapsed){
     if(!wrap) return;
-    wrap.classList.toggle('is-collapsed', !!on);
-    if(btnInline) btnInline.textContent = on ? '⟩' : '⟨';
-    fixedHandle.textContent = on ? '⟨' : '⟩';
-    // 折叠时不占位；展开时根据实际高度占位
-    document.documentElement.style.setProperty('--controls-h', on ? '0px' : (panel ? (Math.round(panel.getBoundingClientRect().height + 12) + 'px') : '64px'));
+    wrap.classList.toggle('is-collapsed', !!collapsed);
+
+    // 行内按钮：展开显示“⟩”（点它收起），折叠显示“⟨”（点它展开）
+    if(btnInline) btnInline.textContent = collapsed ? '⟨' : '⟩';
+
+    // 右上角把手：折叠时显示，展开时隐藏；箭头与行内相反
+    handle.style.display = collapsed ? 'block' : 'none';
+    handle.textContent   = collapsed ? '⟩' : '⟨';
+
+    // 主内容占位：折叠为 0，展开为面板真实高度
+    document.documentElement.style.setProperty(
+      '--controls-h',
+      collapsed ? '0px' : (panel ? (Math.round(panel.getBoundingClientRect().height + 12) + 'px') : '64px')
+    );
   }
 
-  // 行内按钮 & 固定把手
+  // 事件绑定
   if(btnInline){
     btnInline.addEventListener('click', ()=>{
-      setCollapsed(!wrap.classList.contains('is-collapsed'));
+      const wantCollapse = !wrap.classList.contains('is-collapsed');
+      setCollapsed(wantCollapse);
     });
   }
-  fixedHandle.addEventListener('click', ()=> setCollapsed(false));
+  handle.addEventListener('click', ()=> setCollapsed(false));
 
-  // 初始：展开并多次测量，确保字体/资源加载后的高度也覆盖到
+  // 初始：展开并多次测量（字体/资源加载后也能覆盖）
   setCollapsed(false);
-  const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measure(); };
+  const remeasure = ()=>{ if(!wrap.classList.contains('is-collapsed')) measureAndSetPadding(); };
   window.addEventListener('resize', remeasure, {passive:true});
-  // 等待布局稳定后再测几次
   setTimeout(remeasure, 0);
-  setTimeout(remeasure, 120);
+  setTimeout(remeasure, 150);
   window.addEventListener('load', remeasure);
 })();
