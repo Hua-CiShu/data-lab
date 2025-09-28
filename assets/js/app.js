@@ -8,16 +8,15 @@ import './adapters/excel.js';
 import './adapters/sqlite.js';
 import './adapters/json.js';
 
-// 模块
-import './modules/clean.js';
+// 工具库 + 模块（先 lib 再模块）
 import './lib/agg.js';
+import './modules/clean.js';
 import './modules/analyze.js';
 import './modules/histogram.js';
 import './modules/heatmap.js';
 import './modules/wordcloud.js';
 
 const $  = (s) => document.querySelector(s);
-const $$ = (s) => Array.from(document.querySelectorAll(s));
 
 /* =========================================================
  * 基础工具
@@ -72,24 +71,42 @@ function ensureData(){
 }
 
 /* =========================================================
- * 路由绑定
+ * 路由绑定（事件委托：支持后续渲染/移动端抽屉）
  * =======================================================*/
-$$('[data-route]').forEach(el => {
-  el.addEventListener('click', () => {
-    const route = el.getAttribute('data-route');
-    if (route === 'home'){
-      $('#view').innerHTML =
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-route]');
+  if (!el) return;
+
+  e.preventDefault(); // 阻止 <a> 默认跳转
+  const route = el.getAttribute('data-route');
+
+  // 手机抽屉：点了菜单就关闭抽屉
+  document.body.classList.remove('sidebar-open');
+  const mask = document.querySelector('.drawer-mask');
+  if (mask) mask.style.display = 'none';
+
+  if (route === 'home') {
+    const view = document.getElementById('view');
+    if (view) {
+      view.innerHTML =
         '<h2 class="h">欢迎</h2><p class="muted">请选择模块开始。</p>' +
         '<p><a class="btn secondary" href="./samples/sample.csv" download>下载示例 CSV</a></p>';
-      return;
     }
-    const mod = Modules.get(route);
-    if (mod) mod();
-  });
+    return;
+  }
+
+  const mod = Modules.get(route);
+  if (typeof mod === 'function') {
+    try { mod(); }
+    catch (err) { console.error('模块运行异常:', route, err); alert('模块运行异常：' + err); }
+  } else {
+    console.warn('未知的模块路由：', route);
+    alert('未找到模块：' + route + '。请确认侧边栏 data-route 与 Modules.set 的 key 一致。');
+  }
 });
 
 /* =========================================================
- * 悬浮工具面板：读取 / 预览
+ * 悬浮工具面板：读取 / 预览 / 自检
  * =======================================================*/
 $('#btnLoad')?.addEventListener('click', async () => {
   const type = $('#adapterSelect')?.value;
@@ -110,9 +127,6 @@ $('#previewRows')?.addEventListener('change', () => {
   if (DataStore.rows.length) renderTablePreview();
 });
 
-/* =========================================================
- * 左下：运行自检
- * =======================================================*/
 $('#btnTests')?.addEventListener('click', () => {
   const NEED=/[",\n]/;
   const csvCell = (v) => {
@@ -147,7 +161,7 @@ if (view){
 }
 
 /* =========================================================
- * 主题切换（展开=带文案；紧凑=仅图标）
+ * 主题切换（展开=带文案；紧凑=仅图标） + 图表主题适配
  * =======================================================*/
 const themeBtn = $('#themeToggle');
 
@@ -166,7 +180,7 @@ window.applyTheme = function applyTheme(theme){
       : (theme==='dark' ? '🌞 浅色' : '🌙 深色');
   }
 
-  // Chart.js 主题联动（可选）
+  // Chart.js
   if (window.Chart){
     const dark = theme==='dark';
     window.Chart.defaults.color = dark ? '#e5e7eb' : '#111827';
@@ -182,7 +196,7 @@ window.applyTheme = function applyTheme(theme){
     }
   }
 
-  // Plotly 主题联动（可选）
+  // Plotly
   if (window.Plotly){
     const el = document.getElementById('hm-plot');
     if (el && el.data){
@@ -208,7 +222,7 @@ window.applyTheme = function applyTheme(theme){
 })();
 
 /* =========================================================
- * 侧栏：桌面 hover，移动端 click（不依赖 hover）
+ * 侧栏：子菜单（桌面 hover，移动端 click）
  * =======================================================*/
 (function setupSidebarHover(){
   const items = [...document.querySelectorAll('.nav-item')];
@@ -221,7 +235,6 @@ window.applyTheme = function applyTheme(theme){
     const item = head.closest('.nav-item');
 
     if (!isTouch){
-      // 桌面：hover 展开 + click 切换
       head.addEventListener('mouseenter', ()=>{
         if (!item.classList.contains('open')){
           items.forEach(i=>i.classList.remove('open'));
@@ -229,15 +242,12 @@ window.applyTheme = function applyTheme(theme){
         }
       });
     }
-
-    // 两端都允许 click 切换
     head.addEventListener('click', ()=>{
       if (item.classList.contains('open')) item.classList.remove('open');
       else { items.forEach(i=>i.classList.remove('open')); item.classList.add('open'); }
     });
   });
 })();
-
 
 /* =========================================================
  * 悬浮工具组：测高 + 占位固定 + 扇形缓收（右上把手固定）
@@ -287,9 +297,9 @@ window.applyTheme = function applyTheme(theme){
 })();
 
 /* =========================================================
- * 侧栏把手：在品牌区内部右上角；展开 ↔ 紧凑(压缩宽度，不全隐藏)
- *  - 紧凑：品牌显示 DL 圆徽，主题按钮仅图标
- *  - 展开：品牌显示 "Data Lab"，主题按钮带文案
+ * 侧栏把手：品牌区内部右上角；展开 ↔ 紧凑（压缩宽度，不全隐藏）
+ *   - 紧凑：品牌显示 DL 圆徽，主题按钮仅图标
+ *   - 展开：品牌显示 "Data Lab"，主题按钮带文案
  * =======================================================*/
 (function setupSidebarPin(){
   const sidebar = document.querySelector('.sidebar');
@@ -319,7 +329,7 @@ window.applyTheme = function applyTheme(theme){
     pin.id = 'sidebarPin';
     pin.type = 'button';
     pin.textContent = '⟨';                 // 展开状态（点击进入紧凑）
-    (brand || sidebar).appendChild(pin);   // 放进品牌区，保证与标题对齐
+    (brand || sidebar).appendChild(pin);   // 放进品牌区，和标题对齐
   }
 
   function setCompact(compact){
@@ -350,37 +360,34 @@ window.applyTheme = function applyTheme(theme){
  * Mobile drawer：手机上把侧边栏作为抽屉显示
  * =======================================================*/
 (function mobileDrawer(){
-  const isTouch = matchMedia('(max-width: 900px)').matches;
-  if (!isTouch) return;
-
-  // 遮罩
-  let mask = document.querySelector('.drawer-mask');
-  if (!mask){
-    mask = document.createElement('div');
-    mask.className = 'drawer-mask';
-    document.body.appendChild(mask);
+  const mq = matchMedia('(max-width: 900px)');
+  function setup(){
+    const isTouch = mq.matches;
+    let mask = document.querySelector('.drawer-mask');
+    if (!mask){
+      mask = document.createElement('div');
+      mask.className = 'drawer-mask';
+      document.body.appendChild(mask);
+    }
+    if (!isTouch){
+      document.body.classList.remove('sidebar-open');
+      mask.style.display = 'none';
+      return;
+    }
+    const pin = document.getElementById('sidebarPin');
+    if (pin && !pin.__drawerBound){
+      pin.__drawerBound = true;
+      pin.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const opened = document.body.classList.toggle('sidebar-open');
+        mask.style.display = opened ? 'block' : 'none';
+      }, {capture:true});
+    }
+    mask.onclick = ()=>{
+      document.body.classList.remove('sidebar-open');
+      mask.style.display = 'none';
+    };
   }
-
-  // 品牌区内的把手（已在 setupSidebarPin 里创建，这里只绑定手机行为）
-  const pin = document.getElementById('sidebarPin');
-  if (pin){
-    pin.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const opened = document.body.classList.toggle('sidebar-open');
-      // 打开抽屉时，顺便进入“紧凑/展开”的你自己既定状态，这里不改 sidebar-compact
-      mask.style.display = opened ? 'block' : 'none';
-    }, {capture:true});
-  }
-
-  // 点击遮罩关闭
-  mask.addEventListener('click', ()=>{
-    document.body.classList.remove('sidebar-open');
-    mask.style.display = 'none';
-  });
-
-  // 视口尺寸变化时关闭抽屉
-  window.addEventListener('resize', ()=>{
-    document.body.classList.remove('sidebar-open');
-    mask.style.display = 'none';
-  }, {passive:true});
+  setup();
+  mq.addEventListener?.('change', setup);
 })();
