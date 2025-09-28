@@ -312,14 +312,16 @@ window.applyTheme = function applyTheme(theme){
 
   // —— 保证只有一个把手（内部右上角）
   document.querySelectorAll('#sidebarPin').forEach((n,i)=>{ if (i>0) n.remove(); });
+  const brand = sidebar.querySelector('.brand');  // 上面已有 brand 变量就复用
   let pin = document.getElementById('sidebarPin');
   if (!pin){
     pin = document.createElement('button');
     pin.id = 'sidebarPin';
     pin.type = 'button';
-    pin.textContent = '⟨'; // 展开状态（点击进入紧凑）
-    sidebar.appendChild(pin);
+    pin.textContent = '⟨';
+    (brand || sidebar).appendChild(pin);          // ← 优先放进品牌区
   }
+
 
   function setCompact(compact){
     document.body.classList.toggle('sidebar-compact', !!compact);
