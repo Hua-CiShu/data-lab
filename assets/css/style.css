@@ -3,9 +3,9 @@
   --sidebar:260px;
   --radius:6px;
 
-  /* 主内容为工具组让出的空间（由 JS 写入真实高度），再加安全间距 */
+  /* 主内容为工具组让出的空间：由 JS 写入展开时的真实高度 + 18px 安全间距 */
   --controls-h: 64px;   /* will be updated by JS */
-  --controls-gap: 56px; /* extra spacing to avoid any overlap */
+  --controls-gap: 18px; /* smaller gap (≈减少2/3) */
 
   /* light */
   --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
@@ -56,11 +56,12 @@ body{
 .nav-footer{margin-top:12px}
 .nav-footer .btn.small{padding:6px 10px; font-size:12px}
 
+/* 主内容顶部让位（始终按“展开时高度”+18px，让位不随折叠变化） */
 .main{
   padding:18px;
-  /* 工具组不遮挡正文：根据工具组真实高度 + 安全间距自动下移 */
   padding-top: calc(var(--controls-h) + var(--controls-gap)) !important;
 }
+
 .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
 .h{margin:0 0 8px; font-size:18px; font-weight:600}
 .muted{color:var(--muted)}
@@ -99,14 +100,17 @@ th{background:var(--table-header)}
   -webkit-backdrop-filter: saturate(120%) blur(10px);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  transition: transform .24s ease, opacity .24s ease, visibility .24s ease;
   overflow:hidden;
+
+  /* 扇形收起动画：更慢、更柔和 */
+  transition: transform .6s cubic-bezier(.22,.61,.36,1), opacity .6s ease, visibility .6s;
+  transform-origin: right center;
 }
 .controls-row{
   display:flex; align-items:center; gap:8px; padding:8px 10px;
   white-space:nowrap;
 }
-/* 行内的隐藏按钮（与左上角风格一致） */
+/* 行内收起按钮（与左上角风格一致） */
 .control-toggle.tiny{
   margin-left:auto; border:1px solid var(--border);
   background:var(--surface); color:var(--fg);
@@ -114,13 +118,13 @@ th{background:var(--table-header)}
   font-size:12px; line-height:1; cursor:pointer;
 }
 
-/* —— 折叠为“向右滑出消失” —— */
+/* 折叠为“扇子合上”+向右滑出（不影响正文占位） */
 #controlsWrap.is-collapsed .controls{
-  transform: translateX(calc(100% + 16px));
+  transform: perspective(900px) rotateY(-16deg) scaleX(.86) translateX(26%);
   opacity: 0; visibility: hidden;
 }
 
-/* 固定把手：仅在折叠时显示，由 JS 控制 display */
+/* 固定把手：仅在折叠时显示（由 JS 控制 display） */
 #controlsHandle{
   position:fixed; top:16px; right:24px; z-index:51;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
