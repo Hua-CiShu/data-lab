@@ -1,19 +1,35 @@
 import { registerAdapter } from '../core.js';
-registerAdapter('csv', file => new Promise((resolve, reject) => {
-  // 懒加载 PapaParse
-  const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
-  s.onload = () => {
-    window.Papa.parse(file, {
-      header:true, skipEmptyLines:true,
-      transform:v => typeof v === 'string' ? v.trim() : v,
-      complete: (res) => {
-        const rows = res.data;
-        const headers = res.meta.fields || Object.keys(rows[0]||{});
-        resolve({ headers, rows });
-      },
-      error: reject
-    });
-  };
-  s.onerror = reject; document.head.appendChild(s);
-}));
+
+function parseCSV(text){
+  // 简洁健壮 CSV 解析：支持引号/逗号/换行
+  const rows=[]; let i=0, cur='', cell=[], inQ=false;
+  const push=()=>{ cell.push(cur); cur=''; };
+  const newRow=()=>{ rows.push(cell); cell=[]; };
+  while(i<text.length){
+    const ch=text[i++];
+    if(inQ){
+      if(ch==='"' && text[i]==='"'){ cur+='"'; i++; }
+      else if(ch=== '"'){ inQ=false; }
+      else cur+=ch;
+    }else{
+      if(ch=== '"'){ inQ=true; }
+      else if(ch=== ','){ push(); }
+      else if(ch=== '\n'){ push(); newRow(); }
+      else if(ch=== '\r'){ /* skip */ }
+      else cur+=ch;
+    }
+  }
+  push(); newRow();
+  if(rows.length && rows[rows.length-1].length===1 && rows[rows.length-1][0]==='') rows.pop();
+  return rows;
+}
+
+registerAdapter('csv', async (file)=>{
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if(!rows.length) return { headers:[], rows:[] };
+  const headers = rows[0];
+  const data = rows.slice(1).filter(r=>r.length && r.some(v=>String(v).trim()!==''))
+    .map(r => Object.fromEntries(headers.map((h,idx)=>[h, r[idx] ?? ''])));
+  return { headers, rows: data };
+});
