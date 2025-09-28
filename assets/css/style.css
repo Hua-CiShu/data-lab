@@ -1,7 +1,7 @@
-/* ===== Notion-like minimal + light/dark ===== */
+/* ===== Notion-like minimal + light/dark (compat) ===== */
 :root{
   --sidebar:260px;
-  /* 紧凑宽度：约只让“直方图（自动分箱）”出现省略号，若需微调可改 148~160px */
+  /* 紧凑宽度：约只让“直方图（自动分箱）”出现省略号，可微调 148~160px */
   --sidebar-compact:150px;
 
   --radius:6px;
@@ -31,7 +31,7 @@ body{
 
 /* ===== Layout ===== */
 .app{
-  display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh
+  display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh;
 }
 body.sidebar-compact .app{
   grid-template-columns:var(--sidebar-compact) 1fr;
@@ -40,7 +40,8 @@ body.sidebar-compact .app{
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
   border-right:1px solid var(--border);
-  background:color-mix(in oklab, var(--bg) 92%, var(--fg));
+  /* 兼容：直接使用主题表面色作为侧栏背景，避免 color-mix 兼容问题 */
+  background:var(--surface);
   display:flex; flex-direction:column;
   /* 放慢到 1.1s，更柔和 */
   transition:
@@ -154,21 +155,21 @@ th{ background:var(--table-header) }
 /* ===== 悬浮工具组（玻璃） ===== */
 .controls-wrap{
   position:fixed; top:12px; left:calc(var(--sidebar) + 24px); right:24px; z-index:50;
-  pointer-events:none;
+  pointer-events:none;                /* 外层不拦点击 */
   transition:left .3s ease;
 }
 body.sidebar-compact .controls-wrap{
   left:calc(var(--sidebar-compact) + 24px);
 }
 .controls{
-  pointer-events:auto;
+  pointer-events:auto;                /* 内层可交互 */
   background:var(--glass);
   backdrop-filter:saturate(120%) blur(10px);
   -webkit-backdrop-filter:saturate(120%) blur(10px);
   border:1px solid var(--border);
   border-radius:var(--radius);
   overflow:hidden;
-  transition: transform .8s cubic-bezier(.22,.61,.36,1), opacity .8s ease, visibility .8s;
+  transition: transform 1.1s cubic-bezier(.22,.7,.18,1), opacity 1.1s ease, visibility 1.1s;
   transform-origin:right center; /* 收扇子效果 */
 }
 .controls-row{ display:flex; align-items:center; gap:8px; padding:8px 10px; white-space:nowrap }
@@ -203,4 +204,8 @@ body.controls-collapsed      #controlsHandle{ opacity:.95 }
   :root{ --sidebar:0px; --sidebar-compact:0px }
   .controls-wrap{ left:12px; right:12px }
 }
+
+/* ===== 兜底：永不阻挡点击（即使前面某处语法出错也不至于整页失效） ===== */
+#controlsWrap{ pointer-events: none !important; }
+#controlsWrap .controls{ pointer-events: auto !important; }
 
