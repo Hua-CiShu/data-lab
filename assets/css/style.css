@@ -125,33 +125,53 @@ th{background:var(--table-header)}
   opacity: 0; visibility: hidden;
 }
 
-/* —— 固定右上“工具组把手”：展开时完全隐藏，收起时可点 —— */
+/* === 固定右上工具组把手：位置永远不变 === */
 #controlsHandle{
-  position:fixed; top:16px; right:24px; z-index:51;
+  position:fixed; top:14px; right:18px; z-index:1200;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
-  cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
+  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1;
+  cursor:pointer; box-shadow:none; transition:opacity .2s ease, transform .2s ease;
 }
-/* 展开：完全透明&不可点（解决“虚影”）；收起：正常显示&可点 */
-body:not(.controls-collapsed) #controlsHandle{ opacity:0;  pointer-events:none; }
-body.controls-collapsed      #controlsHandle{ opacity:.9; pointer-events:auto; }
-#controlsHandle:hover{ filter:brightness(0.98) }
+/* 展开：完全隐藏避免“虚影”；收起：可点 */
+body:not(.controls-collapsed) #controlsHandle{ opacity:0; pointer-events:none; }
+body.controls-collapsed      #controlsHandle{ opacity:.95; }
 
-/* —— 左侧栏把手：默认可见 0.35，不至于“看不见”，收起时 0.9 —— */
-#sidebarHandle{
-  position:fixed; top:16px; left:12px; z-index:52;
+/* === 侧栏把手（展开态）：吸附在侧栏右上角 === */
+.sidebar{ position:sticky; top:0; }
+#sidebarPin{
+  position:absolute; top:12px; right:-14px; z-index:1100;
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
-  padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
-  cursor:pointer; box-shadow:none; transition:opacity .2s ease, filter .2s ease;
+  padding:6px 10px; border-radius:6px; font-size:12px; line-height:1; cursor:pointer;
+  box-shadow:none;
 }
-/* 展开：0.35（可见且可点）；收起：0.9（更醒目） */
-body:not(.sidebar-collapsed) #sidebarHandle{ opacity:.35; pointer-events:auto; }
-body.sidebar-collapsed       #sidebarHandle{ opacity:.9;  pointer-events:auto; }
-#sidebarHandle:hover{ filter:brightness(0.98) }
 
-body.sidebar-collapsed .sidebar{ transform:translateX(-100%); }
+/* === 侧栏收起：彻底移走且不漏边 === */
+body.sidebar-collapsed .sidebar{
+  transform:translateX(-100%);
+  border-right:0 !important;
+  box-shadow:none !important;
+  visibility:hidden;             /* 内容彻底不可见 */
+}
 body.sidebar-collapsed .app{ grid-template-columns:0 1fr; }
-body.sidebar-collapsed .controls-wrap{ left:12px; }
+body.sidebar-collapsed{ overflow-x:hidden; }   /* 不出现横向残影 */
+body.sidebar-collapsed .controls-wrap{ left:12px; } /* 工具组左移对齐 */
+
+/* === 侧栏收起态：“D” 圆按钮（左上角浮动） === */
+#sidebarDock{
+  position:fixed; top:14px; left:16px; z-index:1200;
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+  letter-spacing:.5px;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+  box-shadow:none; cursor:pointer; transition:transform .2s ease, opacity .2s ease;
+}
+/* 仅在收起时显示“D”按钮；展开时隐藏 */
+body.sidebar-collapsed #sidebarDock{ opacity:.98; pointer-events:auto; }
+body:not(.sidebar-collapsed) #sidebarDock{ opacity:0; pointer-events:none; }
+
+/* 保证侧栏容器能放绝对定位的 #sidebarPin */
+.sidebar{ position:relative; }
 
 /* ===== Responsive ===== */
 @media (max-width:1000px){
