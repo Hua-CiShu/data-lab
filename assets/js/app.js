@@ -189,20 +189,19 @@ function applyTheme(theme){
   });
 })();
 
-/* ===== 悬浮面板：精准测高 + 始终占位 + 扇形缓收 ===== */
+/* ===== 悬浮面板：精准测高 + 始终占位 + 扇形缓收（右上把手固定位置） ===== */
 (function setupControlsFloating(){
   const wrap      = document.getElementById('controlsWrap');
   const panel     = document.getElementById('controlsPanel');
   const btnInline = document.getElementById('controlsToggle');
 
-  // 右上角把手（仅折叠时显示）
+  // 右上角把手（始终在同一坐标，通过 body 类切换透明度与可点性）
   let handle = document.getElementById('controlsHandle');
   if(!handle){
     handle = document.createElement('button');
     handle.id = 'controlsHandle';
     handle.type = 'button';
-    handle.textContent = '⟩';
-    handle.style.display = 'none';     // 展开时隐藏
+    handle.textContent = '⟨'; // 展开时向左（点它收起）
     document.body.appendChild(handle);
   }
 
@@ -219,12 +218,14 @@ function applyTheme(theme){
     if(!wrap) return;
     wrap.classList.toggle('is-collapsed', !!collapsed);
 
-    // 行内按钮：展开显示“⟩”（可收起），折叠显示“⟨”（可展开）
+    // 同步 body 类：控制把手透明度与可点性（位置不变）
+    document.body.classList.toggle('controls-collapsed', !!collapsed);
+
+    // 行内按钮：展开显示“⟩”，折叠显示“⟨”
     if(btnInline) btnInline.textContent = collapsed ? '⟨' : '⟩';
 
-    // 右上角把手：折叠时显示（向右箭头），展开时隐藏
-    handle.style.display = collapsed ? 'block' : 'none';
-    handle.textContent   = collapsed ? '⟩' : '⟨';
+    // 把手仅切换箭头
+    handle.textContent = collapsed ? '⟩' : '⟨';
 
     // 正文占位始终使用 measured（展开高度），不随折叠改变
     document.documentElement.style.setProperty('--controls-h', measured + 'px');
@@ -246,4 +247,26 @@ function applyTheme(theme){
   setTimeout(remeasure, 0);
   setTimeout(remeasure, 150);
   window.addEventListener('load', remeasure);
+})();
+
+/* ===== 左侧栏：固定把手，收起/展开侧栏（工具组左移对齐） ===== */
+(function setupSidebarHandle(){
+  let sHandle = document.getElementById('sidebarHandle');
+  if(!sHandle){
+    sHandle = document.createElement('button');
+    sHandle.id = 'sidebarHandle';
+    sHandle.type = 'button';
+    sHandle.textContent = '⟨'; // 展开时向左（点它收起）
+    document.body.appendChild(sHandle);
+  }
+
+  // 单击左把手切换
+  sHandle.addEventListener('click', ()=>{
+    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+    sHandle.textContent = collapsed ? '⟩' : '⟨';
+  });
+
+  // 初始：侧栏展开
+  document.body.classList.remove('sidebar-collapsed');
+  sHandle.textContent = '⟨';
 })();
