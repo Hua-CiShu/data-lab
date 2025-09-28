@@ -1,7 +1,9 @@
 /* ===== Notion-like minimal + light/dark ===== */
 :root{
   --sidebar:260px;
-  --sidebar-compact:150px;          /* 压缩后 50% 宽度 */
+  /* 紧凑宽度：约只让“直方图（自动分箱）”出现省略号，若需微调可改 148~160px */
+  --sidebar-compact:150px;
+
   --radius:6px;
 
   /* 工具组占位：由 JS 写入“展开时真实高度” */
@@ -11,7 +13,7 @@
   /* light */
   --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
   --primary:#2563eb; --border:#e5e7eb; --table-header:#f8fafc;
-  --glass: rgba(255,255,255,.05);   /* 95% 透明感 */
+  --glass: rgba(255,255,255,.05);
 }
 :root[data-theme="dark"]{
   --bg:#0f172a; --surface:#0b1222; --fg:#e5e7eb; --muted:#a3aab7;
@@ -40,19 +42,20 @@ body.sidebar-compact .app{
   border-right:1px solid var(--border);
   background:color-mix(in oklab, var(--bg) 92%, var(--fg));
   display:flex; flex-direction:column;
-  transition:transform 1.1s cubic-bezier(.22,.7,.18,1),
+  /* 放慢到 1.1s，更柔和 */
+  transition:
+    transform 1.1s cubic-bezier(.22,.7,.18,1),
     width     1.1s cubic-bezier(.22,.7,.18,1);
-  position:relative;                 /* 允许内部绝对定位把手 */
-  overflow:hidden;                   /* 压缩时不漏出 */
+  position:relative;
+  overflow:hidden;
 }
 
+/* 品牌区：把手对齐用的定位上下文 */
 .brand{
-  position:relative;              /* <— 新增：让内部绝对定位基于品牌区 */
+  position:relative;
   display:flex; align-items:center; gap:10px; margin-bottom:12px;
 }
-
 .brand h1{ margin:0; font-size:18px; font-weight:700; letter-spacing:.2px; white-space:nowrap }
-.theme-toggle.tiny{ padding:6px 10px; font-size:12px }
 
 /* 圆形 DL 徽章（仅紧凑时显示） */
 .brand .badge-dl{
@@ -62,7 +65,7 @@ body.sidebar-compact .app{
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
 }
 
-/* 紧凑：隐藏“Data Lab”文字，只显示 DL 徽章 + tiny 主题按钮 */
+/* 紧凑：隐藏“Data Lab”文字，只显示 DL 徽章 + 小号主题按钮 */
 body.sidebar-compact .brand h1{ display:none }
 body.sidebar-compact .brand .badge-dl{ display:flex }
 body.sidebar-compact .theme-toggle{ padding:6px; width:34px; height:34px; border-radius:50%; font-size:14px }
@@ -71,12 +74,12 @@ body.sidebar-compact .theme-toggle{ padding:6px; width:34px; height:34px; border
 body:not(.sidebar-compact) .brand .badge-dl{ display:none }
 body:not(.sidebar-compact) .theme-toggle{ padding:6px 10px; font-size:12px; width:auto; height:auto }
 
-/* 🔎 #sidebarPin */
+/* 侧栏把手（与 Data Lab 同行垂直对齐，放在品牌区内部） */
 #sidebarPin{
   position:absolute;               /* 相对 .brand 定位 */
-  top:50%;                         /* 垂直居中到“Data Lab”这一行 */
+  top:50%;                         /* 垂直居中 */
   right:8px;
-  transform:translateY(-50%);      /* 精准居中 */
+  transform:translateY(-50%);
   z-index:1100;
 
   border:1px solid var(--border);
@@ -97,7 +100,7 @@ body:not(.sidebar-compact) .theme-toggle{ padding:6px 10px; font-size:12px; widt
 }
 .nav-head .title{ display:flex; align-items:center; gap:8px; min-width:0; width:100% }
 .nav-head .title span{
-  display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; /* 单行省略 */
+  display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .nav-item:hover .nav-head{ background:var(--table-header) }
 .submenu{
@@ -116,7 +119,7 @@ body:not(.sidebar-compact) .theme-toggle{ padding:6px 10px; font-size:12px; widt
 .nav-footer{ margin-top:12px }
 .nav-footer .btn.small{ padding:6px 10px; font-size:12px }
 
-/* 主内容为工具组留白：始终按“展开时高度 + 18px”，不随折叠变化 */
+/* 主内容为工具组留白：按“展开时高度 + 18px”，不随折叠变化 */
 .main{
   padding:18px;
   padding-top:calc(var(--controls-h) + var(--controls-gap)) !important;
@@ -155,7 +158,7 @@ th{ background:var(--table-header) }
   transition:left .3s ease;
 }
 body.sidebar-compact .controls-wrap{
-  left:calc(var(--sidebar-compact) + 24px);   /* 紧凑时自动左移，避免被遮挡 */
+  left:calc(var(--sidebar-compact) + 24px);
 }
 .controls{
   pointer-events:auto;
@@ -175,8 +178,6 @@ body.sidebar-compact .controls-wrap{
   padding:4px 8px; border-radius:var(--radius);
   font-size:12px; line-height:1; cursor:pointer;
 }
-
-/* 扇形合拢（隐藏） */
 #controlsWrap.is-collapsed .controls{
   transform:perspective(900px) rotateY(-16deg) scaleX(.86) translateX(26%);
   opacity:0; visibility:hidden;
@@ -188,7 +189,7 @@ body.sidebar-compact .controls-wrap{
   border:1px solid var(--border); background:var(--surface); color:var(--fg);
   padding:6px 10px; border-radius:6px; font-size:12px; line-height:1; cursor:pointer; box-shadow:none;
 }
-body:not(.controls-collapsed) #controlsHandle{ opacity:0; pointer-events:none } /* 展开隐藏 */
+body:not(.controls-collapsed) #controlsHandle{ opacity:0; pointer-events:none }
 body.controls-collapsed      #controlsHandle{ opacity:.95 }
 
 /* ===== 响应式 ===== */
@@ -200,6 +201,6 @@ body.controls-collapsed      #controlsHandle{ opacity:.95 }
 @media (max-width:900px){
   .app{ grid-template-columns:1fr }
   :root{ --sidebar:0px; --sidebar-compact:0px }
-  .controls-wrap{ left:12px; right:12px } /* 小屏直接顶边 */
+  .controls-wrap{ left:12px; right:12px }
 }
 
