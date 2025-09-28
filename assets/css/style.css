@@ -1,16 +1,23 @@
-/* Notion-like minimal + light/dark + floating glass controls */
+/* Notion-like minimal + light/dark + floating glass controls (95% transparent) */
 :root{
   --sidebar:260px;
   --radius:6px;
+
+  /* 主内容为工具组让出的空间（由 JS 写入真实高度），再加安全间距 */
+  --controls-h: 64px;   /* will be updated by JS */
+  --controls-gap: 56px; /* extra spacing to avoid any overlap */
+
   /* light */
   --bg:#ffffff; --surface:#ffffff; --fg:#111827; --muted:#6b7280;
   --primary:#2563eb; --border:#e5e7eb; --table-header:#f8fafc;
-  --glass: rgba(255,255,255,.78);
+
+  /* 95% 透明（0.05 不透明） */
+  --glass: rgba(255,255,255,.05);
 }
 :root[data-theme="dark"]{
   --bg:#0f172a; --surface:#0b1222; --fg:#e5e7eb; --muted:#a3aab7;
   --primary:#60a5fa; --border:rgba(255,255,255,.16); --table-header:rgba(255,255,255,.06);
-  --glass: rgba(11,18,34,.62);
+  --glass: rgba(11,18,34,.05);
 }
 
 *{box-sizing:border-box}
@@ -20,7 +27,7 @@ body{
        Roboto, Helvetica, Arial, "PingFang SC","Noto Sans SC","Microsoft YaHei", sans-serif;
 }
 
-/* Layout */
+/* ===== Layout ===== */
 .app{display:grid; grid-template-columns:var(--sidebar) 1fr; min-height:100vh}
 .sidebar{
   position:sticky; top:0; height:100vh; padding:16px;
@@ -46,16 +53,19 @@ body{
 .nav-item.open .submenu{padding:6px 8px 10px 18px; max-height:420px; opacity:1; transform:translateY(0)}
 .submenu a{display:block; padding:6px 8px; border-radius:6px; color:inherit; text-decoration:none}
 .submenu a:hover{background:var(--table-header)}
-
 .nav-footer{margin-top:12px}
 .nav-footer .btn.small{padding:6px 10px; font-size:12px}
 
-.main{padding:18px}
+.main{
+  padding:18px;
+  /* 工具组不遮挡正文：根据工具组真实高度 + 安全间距自动下移 */
+  padding-top: calc(var(--controls-h) + var(--controls-gap)) !important;
+}
 .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px}
 .h{margin:0 0 8px; font-size:18px; font-weight:600}
 .muted{color:var(--muted)}
 
-/* Inputs / Buttons */
+/* ===== Inputs / Buttons ===== */
 .inline{display:flex; align-items:center; gap:6px}
 .badge,.chip{border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:var(--muted); background:var(--surface)}
 .chip{padding:2px 8px}
@@ -68,7 +78,7 @@ input[type=file], select, input, textarea{border:1px solid var(--border); backgr
 select.sm, input.sm{padding:6px 8px; font-size:13px}
 .w-72{width:72px}
 
-/* Table */
+/* ===== Table ===== */
 table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface)}
 th,td{border:1px solid var(--border); padding:6px 8px; text-align:left}
 th{background:var(--table-header)}
@@ -89,14 +99,14 @@ th{background:var(--table-header)}
   -webkit-backdrop-filter: saturate(120%) blur(10px);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  box-shadow:0 10px 24px rgba(0,0,0,.06);
   transition: transform .24s ease, opacity .24s ease, visibility .24s ease;
   overflow:hidden;
 }
 .controls-row{
-  display:flex; align-items:center; gap:10px; padding:8px 10px;
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
   white-space:nowrap;
 }
+/* 行内的隐藏按钮（与左上角风格一致） */
 .control-toggle.tiny{
   margin-left:auto; border:1px solid var(--border);
   background:var(--surface); color:var(--fg);
@@ -104,69 +114,29 @@ th{background:var(--table-header)}
   font-size:12px; line-height:1; cursor:pointer;
 }
 
-/* Collapse to the right: completely hide content, keep only a subtle handle at screen right */
-body.controls-collapsed .controls{
-  transform:translateX(calc(100% + 16px));
-  opacity:0; visibility:hidden;
-}
-/* fixed small handle on the very right edge */
-#controlsHandle{
-  posit
-/* ==== 修复：给主内容预留空间；面板按容器折叠 ==== */
-
-/* 工具面板的实际高度（JS 动态写入），默认 64px */
-:root{ --controls-h: 64px; }
-
-/* 主内容顶部留白：面板高度 + 间距，不再被遮挡 */
-.main{ padding-top: calc(var(--controls-h) + 24px); }
-
-/* 用 #controlsWrap 的折叠态来控制隐藏（而不是 body 类） */
-#controlsWrap.is-collapsed .controls{
-  transform:translateX(calc(100% + 16px));
-  opacity:0; visibility:hidden;
-}
-
-/* 右上角把手的样式保持极简；折叠时显示，展开时隐藏 */
-#controlsHandle{ display:none; }
-#controlsWrap.is-collapsed ~ #controlsHandle{ display:block; }
-
-/* 一点点微调：行内按钮和控件更紧凑，全部在一行不换行 */
-.controls-row{ white-space:nowrap; gap:8px; }
-.controls-row .sm{ padding:6px 8px; font-size:13px; }
-
-/* ==== 工具组不再遮挡正文：主内容根据面板真实高度 + 额外间距自动让位 ==== */
-:root{
-  --controls-h: 64px;         /* JS 会实时写入真实高度 */
-  --controls-gap: 28px;       /* 额外留白，防重叠；可调 20~36 */
-}
-
-/* 主内容顶部留白：面板高度 + 额外间距 */
-.main{ padding-top: calc(var(--controls-h) + var(--controls-gap)) !important; }
-
-/* 让第一块卡片再微微下沉一点（更“和谐”） */
-.main > .card:first-of-type{ margin-top: 4px; }
-
-/* —— 面板透明度（玻璃） —— 
-   如果你说的“透明度 80%”指更通透 = 80% 透明，即不透明度 0.2
-   我这里设置为 0.2；若你想要 80% 不透明（更实），把 0.2 改 0.8 即可。
-*/
-:root{
-  --glass: rgba(255,255,255,.20);   /* 浅色主题：20% 不透明 = 80% 透明 */
-}
-:root[data-theme="dark"]{
-  --glass: rgba(11,18,34,.20);      /* 深色主题：同样 0.2 不透明 */
-}
-
-/* 折叠逻辑：以 #controlsWrap 的状态为准 */
+/* —— 折叠为“向右滑出消失” —— */
 #controlsWrap.is-collapsed .controls{
   transform: translateX(calc(100% + 16px));
   opacity: 0; visibility: hidden;
 }
 
-/* 右上角把手仅在折叠时显示 */
-#controlsHandle{ display:none; }
-#controlsWrap.is-collapsed ~ #controlsHandle{ display:block; }
+/* 固定把手：仅在折叠时显示，由 JS 控制 display */
+#controlsHandle{
+  position:fixed; top:16px; right:24px; z-index:51;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg);
+  padding:6px 10px; border-radius:var(--radius); font-size:12px; line-height:1;
+  cursor:pointer; opacity:.9; box-shadow:none;
+  transition: filter .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+#controlsHandle:hover{ filter:brightness(0.98) }
 
-/* 行内控件更紧凑且不换行（全在一行） */
-.controls-row{ white-space: nowrap; gap: 8px; }
-.controls-row .sm{ padding: 6px 8px; font-size: 13px; }
+/* ===== Responsive ===== */
+@media (max-width:1000px){
+  :root{ --sidebar:220px; }
+  .controls-wrap{ left:calc(var(--sidebar) + 12px); right:12px }
+}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  :root{ --sidebar:0px; }
+  .controls-wrap{ left:12px; right:12px }
+}
